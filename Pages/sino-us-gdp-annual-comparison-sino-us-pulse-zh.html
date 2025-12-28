@@ -1,0 +1,239 @@
+
+      <!DOCTYPE html>
+      <html lang="zh">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>中美国内生产总值 (GDP) 年度对比 - Sino-US Pulse</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <!-- Embedded Favicon for the downloaded file -->
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230f172a'/%3E%3Cpath d='M96 256h64l48-112 64 224 64-112h80' stroke='%23818cf8' stroke-width='32' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+        <style>
+          body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            margin: 0;
+            padding-top: 80px; /* Space for fixed header */
+            padding-bottom: 40px;
+          }
+          .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 64px;
+            background-color: #0f172a; /* Solid background */
+            border-bottom: 1px solid #334155;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          }
+          .container-custom {
+            max-width: 56rem; /* 4xl */
+            margin: 0 auto;
+            padding: 0 1.5rem; /* px-6 */
+            width: 100%;
+          }
+          .card {
+            background-color: rgba(30, 41, 59, 0.5);
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+          }
+          canvas { width: 100% !important; height: auto !important; }
+          h3 { font-size: 1.125rem; font-weight: 600; color: white; margin-top: 1.25rem; margin-bottom: 0.75rem; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; }
+          h4 { font-size: 1rem; font-weight: 600; color: #f1f5f9; margin-top: 1rem; margin-bottom: 0.5rem; }
+          ul, ol { padding-left: 1.25rem; margin-bottom: 0.75rem; color: #cbd5e1; }
+          ul { list-style-type: disc; }
+          ol { list-style-type: decimal; }
+          li { margin-bottom: 0.25rem; }
+          p { margin-bottom: 0.75rem; line-height: 1.625; color: #cbd5e1; }
+          a { color: #818cf8; text-decoration: underline; }
+          strong { color: #818cf8; font-weight: 700; }
+        </style>
+      </head>
+      <body>
+        <!-- Fixed Header -->
+        <div class="fixed-header">
+           <div class="container-custom flex items-center gap-3 h-full">
+              <!-- Inline SVG Logo for the header -->
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-8 h-8 rounded-lg bg-slate-800 p-1 border border-slate-700">
+                <rect width="512" height="512" rx="100" fill="#0f172a"/>
+                <path d="M96 256h64l48-112 64 224 64-112h80" stroke="#818cf8" stroke-width="48" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <a href="https://uc.324893.xyz/" target="_blank" class="text-indigo-500 font-bold text-xl hover:text-indigo-400 transition-colors no-underline">Sino-US Pulse</a>
+           </div>
+        </div>
+
+        <div class="container-custom">
+            <div class="mb-8 border-b border-slate-700 pb-6 mt-6">
+              <h1 class="text-3xl font-bold text-white">中美国内生产总值 (GDP) 年度对比</h1>
+              <p class="text-slate-400 mt-2 text-sm">Generated on 2025/12/29</p>
+            </div>
+
+            <div class="card mb-8 bg-slate-800 p-6 rounded-xl border border-slate-700">
+               <h2 class="text-xl font-semibold mb-4 text-white">数据图表</h2>
+               <div class="w-full bg-slate-900/50 rounded-lg p-4 h-[400px]">
+                 <canvas id="myChart"></canvas>
+               </div>
+               <div class="mt-4 text-center text-xs text-slate-500">
+                 十亿美元 (USD Billions)
+               </div>
+            </div>
+
+            <div class="space-y-6">
+              <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full"><div class="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4"><div class="p-2 bg-blue-500/10 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity w-6 h-6 text-blue-400"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"></path></svg></div><h3 class="text-lg font-semibold text-white">摘要</h3></div><div class="text-sm text-slate-300"><h5 class="text-sm font-bold text-indigo-300 mt-3 mb-1 block">核心摘要</h5>
+<ul class="list-disc pl-5 space-y-2 mb-3 text-slate-300 marker:text-indigo-500">
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">巨大的跨度增长</strong>：从1945年到2024年，美国GDP增长了超过125倍，而中国从1949年建国初期到2024年实现了超1500倍的增长。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">差距显著缩小</strong>：20世纪末，中国GDP仅为美国的10%左右；到2024年，中国GDP已达到美国的约64.4%。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">重要节点</strong>：2001年入世（WTO）是中国经济提速的关键转折点；2010年中国超越日本成为世界第二大经济体。</li>
+</ul></div></div><div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full"><div class="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4"><div class="p-2 bg-emerald-500/10 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-6 h-6 text-emerald-400"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg></div><h3 class="text-lg font-semibold text-white">趋势分析</h3></div><div class="text-sm text-slate-300"><h5 class="text-sm font-bold text-indigo-300 mt-3 mb-1 block">1. 战后起步与波动阶段 (1945-1978)</h5>
+<ul class="list-disc pl-5 space-y-2 mb-3 text-slate-300 marker:text-indigo-500">
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">美国霸权</strong>：1945年二战结束后，美国作为全球唯一的工业强国，GDP占据全球半壁江山。20世纪50-60年代是美国的“黄金时代”。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">中国曲折探索</strong>：建国初期中国经济基数极低，经历了国民经济恢复期和早期工业化。尽管有五年计划的推动，但政治运动导致60年代中期和70年代末数据出现波动。</li>
+</ul>
+<h5 class="text-sm font-bold text-indigo-300 mt-3 mb-1 block">2. 改革开放与转型阶段 (1978-2001)</h5>
+<ul class="list-disc pl-5 space-y-2 mb-3 text-slate-300 marker:text-indigo-500">
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">中国变革</strong>：1978年改革开放后，中国由计划经济向市场经济转型，GDP开始稳步爬升。1994年汇率并轨导致美元计价数据出现短期跳变，但实际购买力持续增长。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">美国稳健扩张</strong>：此阶段美国经历了“里根经济学”和90年代的信息技术革命（新经济），GDP总量突破10万亿美元大关。</li>
+</ul>
+<h5 class="text-sm font-bold text-indigo-300 mt-3 mb-1 block">3. 加入WTO后的高速追赶 (2001-2019)</h5>
+<ul class="list-disc pl-5 space-y-2 mb-3 text-slate-300 marker:text-indigo-500">
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">中国崛起</strong>：2001年加入WTO是中国经济的催化剂。2000年至2010年间，中国GDP翻了五倍，并于2010年超越日本。2010年后，中国保持了中高速增长，逐渐拉近与美国的距离。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">危机影响</strong>：2008年次贷危机导致美国经济出现短暂负增长（2009年），而中国通过大规模刺激计划保持了高增长，差距进一步收窄。</li>
+</ul>
+<h5 class="text-sm font-bold text-indigo-300 mt-3 mb-1 block">4. 全球变局与存量博弈 (2020-2024)</h5>
+<ul class="list-disc pl-5 space-y-2 mb-3 text-slate-300 marker:text-indigo-500">
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">疫情冲击</strong>：2020年美国因疫情出现收缩，而中国是当年唯一实现正增长的主要经济体。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">汇率波动与复苏</strong>：2022-2023年，受美联储激进加息和美元升值影响，以美元计价的中国GDP出现名义上的停滞甚至微跌，而美国因高通胀推高了名义GDP，两者名义差距有所扩大，但实际产出博弈仍在继续。</li>
+</ul></div></div><div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full"><div class="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4"><div class="p-2 bg-purple-500/10 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-telescope w-6 h-6 text-purple-400"><path d="m10.065 12.493-6.18 1.318a.934.934 0 0 1-1.108-.702l-.537-2.15a1.07 1.07 0 0 1 .691-1.265l13.504-4.44"></path><path d="m13.56 11.747 4.332-.924"></path><path d="m16 21-3.105-6.21"></path><path d="M16.485 5.94a2 2 0 0 1 1.455-2.425l1.09-.272a1 1 0 0 1 1.212.727l1.515 6.06a1 1 0 0 1-.727 1.213l-1.09.272a2 2 0 0 1-2.425-1.455z"></path><path d="m6.158 8.633 1.114 4.456"></path><path d="m8 21 3.105-6.21"></path><circle cx="12" cy="13" r="2"></circle></svg></div><h3 class="text-lg font-semibold text-white">未来展望</h3></div><div class="text-sm text-slate-300"><h5 class="text-sm font-bold text-indigo-300 mt-3 mb-1 block">未来展望</h5>
+<ul class="list-disc pl-5 space-y-2 mb-3 text-slate-300 marker:text-indigo-500">
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">名义与实际的背离</strong>：未来几年，中美名义GDP差距受汇率影响可能出现反复，但中国在制造业和购买力平价（PPP）方面的领先优势将持续。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">增长动力转换</strong>：中国正从规模扩张转向高质量发展（新质生产力），而美国则试图通过产业回流和AI技术革命维持领先地位。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">双极格局常态化</strong>：预计到2030年代中期，中美经济总量将更为接近，形成长期稳定的双引擎全球格局。</li>
+</ul></div></div><div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full"><div class="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4"><div class="p-2 bg-slate-500/10 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open w-6 h-6 text-slate-400"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg></div><h3 class="text-lg font-semibold text-white">数据来源参考</h3></div><ul class="space-y-2 text-slate-400 text-sm"><li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link w-4 h-4 mt-0.5 shrink-0 text-slate-500"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg><a href="https://data.worldbank.org/" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-400 transition-colors underline decoration-slate-600 hover:decoration-indigo-400 underline-offset-4">World Bank Open Data</a></li><li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link w-4 h-4 mt-0.5 shrink-0 text-slate-500"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg><a href="https://www.imf.org/en/Publications/WEO" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-400 transition-colors underline decoration-slate-600 hover:decoration-indigo-400 underline-offset-4">IMF World Economic Outlook</a></li><li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link w-4 h-4 mt-0.5 shrink-0 text-slate-500"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg><a href="https://www.bea.gov/" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-400 transition-colors underline decoration-slate-600 hover:decoration-indigo-400 underline-offset-4">U.S. Bureau of Economic Analysis (BEA)</a></li><li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link w-4 h-4 mt-0.5 shrink-0 text-slate-500"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg><a href="http://www.stats.gov.cn/" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-400 transition-colors underline decoration-slate-600 hover:decoration-indigo-400 underline-offset-4">China National Bureau of Statistics</a></li></ul></div>
+            </div>
+
+            <div class="mt-12 pt-6 border-t border-slate-800 text-center text-slate-500 text-sm">
+               <p>Powered by Gemini 2.0 Flash • <a href="https://uc.324893.xyz/" target="_blank" class="text-indigo-400 hover:text-indigo-300 transition-colors">Sino-US Pulse</a></p>
+            </div>
+        </div>
+
+        <script>
+          const ctx = document.getElementById('myChart').getContext('2d');
+          
+          // Create Gradients to match Recharts style
+          const gradientUsa = ctx.createLinearGradient(0, 0, 0, 400);
+          gradientUsa.addColorStop(0, 'rgba(59, 130, 246, 0.3)'); // Blue
+          gradientUsa.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+          const gradientChina = ctx.createLinearGradient(0, 0, 0, 400);
+          gradientChina.addColorStop(0, 'rgba(239, 68, 68, 0.3)'); // Red
+          gradientChina.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ["1945","1946","1947","1948","1949","1950","1951","1952","1953","1954","1955","1956","1957","1958","1959","1960","1961","1962","1963","1964","1965","1966","1967","1968","1969","1970","1971","1972","1973","1974","1975","1976","1977","1978","1979","1980","1981","1982","1983","1984","1985","1986","1987","1988","1989","1990","1991","1992","1993","1994","1995","1996","1997","1998","1999","2000","2001","2002","2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021","2022","2023","2024"],
+              datasets: [
+                {
+                  label: '美国',
+                  data: [228,227,249,274,272,300,336,358,379,391,414,437,461,467,497,543.3,563.3,605.1,638.6,685.8,743.7,815,861.7,942.5,1019.9,1073.3,1164.8,1279.1,1425.4,1545.2,1684.9,1873.4,2081.8,2351.6,2627.3,2857.3,3207,3343.8,3634,4037.7,4339,4585.3,4855.2,5236.4,5641.6,5963.1,6158.1,6520.3,6858.5,7287.2,7639.7,8073.1,8577.5,9062.8,9630.7,10252.3,10581.8,10936.4,11458.2,12213.7,13036.6,13814.6,14451.9,14712.8,14448.9,14992.1,15542.6,16197,16784.8,17527.2,18238.3,18745.1,19543,20611.9,21433.2,21060.5,23315.1,25462.7,27360.9,28780],
+                  borderColor: '#3b82f6',
+                  backgroundColor: gradientUsa,
+                  borderWidth: 3,
+                  fill: true,
+                  tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
+                  yAxisID: 'y'
+                },
+                {
+                  label: '中国',
+                  data: [15,16,17.5,19,12,18,22,30,35,38,42,46,50,55,59,59.7,50.1,47.2,50.7,59.7,70.4,76.7,72.9,70.8,79.7,92.6,99.8,113.8,138.5,144.2,163.4,153.9,174.9,149.5,178.3,191.1,195.9,205,230.7,259.9,306.7,300.8,273,312.4,347.8,360.9,383.4,426.9,444.7,564.3,734.5,863.7,961.6,1029,1094,1211.3,1339.4,1470.5,1660.3,1955.3,2285.9,2752.1,3550.3,4594.3,5101.7,6087.2,7551.5,8532.2,9570.4,10475.6,11061.6,11233.3,12310.4,13894.8,14279.9,14687.7,17820.5,17963.2,17794.8,18530],
+                  borderColor: '#ef4444',
+                  backgroundColor: gradientChina,
+                  borderWidth: 3,
+                  fill: true,
+                  tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
+                  yAxisID: 'y'
+                },
+                {
+                  label: '美/中 倍数',
+                  data: ["15.20","14.19","14.23","14.42","22.67","16.67","15.27","11.93","10.83","10.29","9.86","9.50","9.22","8.49","8.42","9.10","11.24","12.82","12.60","11.49","10.56","10.63","11.82","13.31","12.80","11.59","11.67","11.24","10.29","10.72","10.31","12.17","11.90","15.73","14.74","14.95","16.37","16.31","15.75","15.54","14.15","15.24","17.78","16.76","16.22","16.52","16.06","15.27","15.42","12.91","10.40","9.35","8.92","8.81","8.80","8.46","7.90","7.44","6.90","6.25","5.70","5.02","4.07","3.20","2.83","2.46","2.06","1.90","1.75","1.67","1.65","1.67","1.59","1.48","1.50","1.43","1.31","1.42","1.54","1.55"],
+                  borderColor: '#10b981',
+                  backgroundColor: 'transparent',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
+                  yAxisID: 'y1'
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: {
+                mode: 'index',
+                intersect: false,
+              },
+              plugins: {
+                legend: {
+                  labels: { color: '#cbd5e1' }
+                },
+                tooltip: {
+                  backgroundColor: '#1e293b',
+                  titleColor: '#f8fafc',
+                  bodyColor: '#cbd5e1',
+                  borderColor: '#334155',
+                  borderWidth: 1,
+                  padding: 10,
+                  displayColors: true
+                }
+              },
+              scales: {
+                x: {
+                  grid: { color: '#334155' },
+                  ticks: { color: '#94a3b8' }
+                },
+                y: {
+                  type: 'linear',
+                  display: true,
+                  position: 'left',
+                  grid: { color: '#334155' },
+                  ticks: { 
+                      color: '#94a3b8',
+                      callback: function(value) {
+                        if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
+                        if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                        if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+                        return value;
+                      }
+                  }
+                },
+                y1: {
+                  type: 'linear',
+                  display: true,
+                  position: 'right',
+                  grid: { drawOnChartArea: false },
+                  ticks: { 
+                    color: '#10b981',
+                    callback: function(value) { return value + 'x'; }
+                  }
+                }
+              }
+            }
+          });
+        </script>
+      </body>
+      </html>
+    
