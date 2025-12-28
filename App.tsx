@@ -46,8 +46,8 @@ const App: React.FC = () => {
     download: language === 'zh' ? '下载网页' : 'Download Page'
   };
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'zh' : 'en';
+  const changeLanguage = (newLang: Language) => {
+    if (language === newLang) return;
     setLanguage(newLang);
     localStorage.setItem('sino_pulse_language', newLang);
   };
@@ -436,13 +436,26 @@ const App: React.FC = () => {
             </div>
         </div>
 
-        <div className="px-6 py-4 border-b border-slate-800">
-             <button 
-                onClick={toggleLanguage}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+        <div className="px-6 py-4 border-b border-slate-800 flex gap-2">
+            <button 
+                onClick={() => changeLanguage('zh')}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    language === 'zh' 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'text-slate-400 bg-slate-800 hover:bg-slate-700 hover:text-slate-200'
+                }`}
             >
-                <Languages className="w-4 h-4" />
-                <span>{language === 'en' ? 'English' : '中文 (简体)'}</span>
+                中文
+            </button>
+            <button 
+                onClick={() => changeLanguage('en')}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    language === 'en' 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'text-slate-400 bg-slate-800 hover:bg-slate-700 hover:text-slate-200'
+                }`}
+            >
+                English
             </button>
         </div>
 
