@@ -46,8 +46,8 @@ const App: React.FC = () => {
     download: language === 'zh' ? '下载网页' : 'Download Page'
   };
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'zh' : 'en';
+  const changeLanguage = (newLang: Language) => {
+    if (language === newLang) return;
     setLanguage(newLang);
     localStorage.setItem('sino_pulse_language', newLang);
   };
@@ -115,6 +115,13 @@ const App: React.FC = () => {
     const usaLabel = language === 'zh' ? '美国' : 'USA';
     const chinaLabel = language === 'zh' ? '中国' : 'China';
     const ratioLabel = language === 'zh' ? '美/中 倍数' : 'USA/China Ratio';
+    const unitLabel = language === 'zh' ? '单位' : 'Unit';
+    const savedLocally = language === 'zh' ? '本地已保存' : 'Saved locally';
+
+    // Filename: [Topic]-[AppName]-[Lang].html
+    const filenameTitle = data.titleEn || data.title;
+    const langSuffix = language === 'zh' ? '-zh' : '-en';
+    const cleanFilename = `${filenameTitle.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-sino-us-pulse${langSuffix}.html`;
 
     // Construct the full HTML file with embedded Chart.js for interactivity
     const htmlContent = `
@@ -127,19 +134,43 @@ const App: React.FC = () => {
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <!-- Embedded Favicon for the downloaded file -->
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230f172a'/%3E%3Cpath d='M96 256h64l48-112 64 224 64-112h80' stroke='%23818cf8' stroke-width='32' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
         <style>
           body { 
             font-family: 'Inter', sans-serif; 
             background-color: #0f172a; 
             color: #f8fafc; 
-            padding: 40px;
+            margin: 0;
+            padding-top: 80px; /* Space for fixed header */
+            padding-bottom: 40px;
+          }
+          .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 64px;
+            background-color: #0f172a; /* Solid background */
+            border-bottom: 1px solid #334155;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          }
+          .container-custom {
+            max-width: 72rem; /* 6xl */
+            margin: 0 auto;
+            padding: 0 1.5rem; /* px-6 */
+            width: 100%;
           }
           .card {
-            background-color: rgba(30, 41, 59, 0.5);
+            background-color: rgba(30, 41, 59, 0.8);
             border: 1px solid #334155;
-            border-radius: 0.75rem;
+            border-radius: 1rem;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
           }
           canvas { width: 100% !important; height: auto !important; }
           h3 { font-size: 1.125rem; font-weight: 600; color: white; margin-top: 1.25rem; margin-bottom: 0.75rem; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; }
@@ -153,36 +184,92 @@ const App: React.FC = () => {
           strong { color: #818cf8; font-weight: 700; }
         </style>
       </head>
-      <body class="max-w-4xl mx-auto">
-        <div class="mb-8 border-b border-slate-700 pb-6">
-          <div class="flex items-center gap-3 mb-2">
-             <span class="text-indigo-500 font-bold text-xl">Sino-US Pulse</span>
-          </div>
-          <h1 class="text-3xl font-bold text-white">${data.title}</h1>
-          <p class="text-slate-400 mt-2 text-sm">Generated on ${new Date().toLocaleDateString()}</p>
-        </div>
-
-        <div class="card mb-8 bg-slate-800 p-6 rounded-xl border border-slate-700">
-           <h2 class="text-xl font-semibold mb-4 text-white">${language === 'zh' ? '数据图表' : 'Data Chart'}</h2>
-           <div class="w-full bg-slate-900/50 rounded-lg p-4 h-[400px]">
-             <canvas id="myChart"></canvas>
-           </div>
-           <div class="mt-4 text-center text-xs text-slate-500">
-             ${data.yAxisLabel}
+      <body>
+        <!-- Fixed Header -->
+        <div class="fixed-header">
+           <div class="container-custom flex items-center gap-3 h-full">
+              <!-- Inline SVG Logo for the header -->
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-8 h-8 rounded-lg bg-slate-800 p-1 border border-slate-700">
+                <rect width="512" height="512" rx="100" fill="#0f172a"/>
+                <path d="M96 256h64l48-112 64 224 64-112h80" stroke="#818cf8" stroke-width="48" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <a href="https://uc.324893.xyz/" target="_blank" class="text-indigo-500 font-bold text-xl hover:text-indigo-400 transition-colors no-underline">Sino-US Pulse</a>
            </div>
         </div>
 
-        <div class="space-y-6">
-          ${analysisHtml}
-        </div>
+        <div class="container-custom">
+            
+            <!-- Chart Card (Replicated Interface) -->
+            <div class="card h-[500px] flex flex-col relative overflow-hidden">
+               <!-- Card Header -->
+               <div class="mb-2 flex flex-row justify-between items-start shrink-0">
+                  <div>
+                      <h2 class="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+                          ${data.title}
+                          <!-- Cloud Icon -->
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500/50" title="${savedLocally}"><path d="M17.5 19c0-1.7-1.3-3-3-3h-11"/><path d="M3 16.5c-3.2-5.1 4-11.3 9-6.8 5.4-4.8 12.3-1.6 13.5 5.4 1.2 7-5.1 9.9-8 9.9"/></svg>
+                      </h2>
+                  </div>
+                  <!-- No Refresh Button -->
+               </div>
 
-        <div class="mt-12 pt-6 border-t border-slate-800 text-center text-slate-500 text-sm">
-           <p>Powered by Gemini 2.0 Flash • Sino-US Pulse</p>
+               <!-- Chart Area -->
+               <div class="flex-1 w-full min-h-0 relative">
+                 <canvas id="myChart"></canvas>
+               </div>
+               
+               <!-- Custom Legend to match UI -->
+               <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs mt-8 pb-2 w-full shrink-0">
+                  <div class="flex items-center gap-4">
+                     <!-- USA Legend -->
+                     <div class="flex items-center gap-1.5 cursor-pointer opacity-100">
+                        <div class="w-2.5 h-2.5 rounded-full" style="background-color: #3b82f6;"></div>
+                        <span class="text-slate-300 font-medium">${usaLabel}</span>
+                     </div>
+                     <!-- China Legend -->
+                     <div class="flex items-center gap-1.5 cursor-pointer opacity-100">
+                        <div class="w-2.5 h-2.5 rounded-full" style="background-color: #ef4444;"></div>
+                        <span class="text-slate-300 font-medium">${chinaLabel}</span>
+                     </div>
+                     <!-- Ratio Legend -->
+                     <div class="flex items-center gap-1.5 cursor-pointer opacity-100">
+                        <div class="w-2.5 h-2.5 rounded-full" style="background-color: #10b981;"></div>
+                        <span class="text-slate-300 font-medium">${ratioLabel}</span>
+                     </div>
+                  </div>
+                  
+                  <div class="h-4 w-px bg-slate-700 mx-2"></div>
+                  
+                  <div class="text-slate-500">
+                     ${unitLabel}: ${data.yAxisLabel}
+                  </div>
+                  
+                  <!-- No Download Button -->
+               </div>
+            </div>
+
+            <!-- Analysis Content -->
+            <div class="space-y-6">
+              ${analysisHtml}
+            </div>
+
+            <div class="mt-12 pt-6 border-t border-slate-800 text-center text-slate-500 text-sm">
+               <p>Powered by Gemini 2.0 Flash • <a href="https://uc.324893.xyz/" target="_blank" class="text-indigo-400 hover:text-indigo-300 transition-colors">Sino-US Pulse</a></p>
+            </div>
         </div>
 
         <script>
-          const ctx = document.getElementById('myChart');
+          const ctx = document.getElementById('myChart').getContext('2d');
           
+          // Create Gradients to match Recharts style
+          const gradientUsa = ctx.createLinearGradient(0, 0, 0, 400);
+          gradientUsa.addColorStop(0, 'rgba(59, 130, 246, 0.3)'); // Blue
+          gradientUsa.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+          const gradientChina = ctx.createLinearGradient(0, 0, 0, 400);
+          gradientChina.addColorStop(0, 'rgba(239, 68, 68, 0.3)'); // Red
+          gradientChina.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
           new Chart(ctx, {
             type: 'line',
             data: {
@@ -192,20 +279,24 @@ const App: React.FC = () => {
                   label: '${usaLabel}',
                   data: ${JSON.stringify(usaData)},
                   borderColor: '#3b82f6',
-                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                  borderWidth: 2,
+                  backgroundColor: gradientUsa,
+                  borderWidth: 3,
                   fill: true,
                   tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
                   yAxisID: 'y'
                 },
                 {
                   label: '${chinaLabel}',
                   data: ${JSON.stringify(chinaData)},
                   borderColor: '#ef4444',
-                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                  borderWidth: 2,
+                  backgroundColor: gradientChina,
+                  borderWidth: 3,
                   fill: true,
                   tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
                   yAxisID: 'y'
                 },
                 {
@@ -216,8 +307,9 @@ const App: React.FC = () => {
                   borderWidth: 2,
                   borderDash: [5, 5],
                   tension: 0.3,
-                  yAxisID: 'y1',
-                  pointRadius: 0
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
+                  yAxisID: 'y1'
                 }
               ]
             },
@@ -230,14 +322,29 @@ const App: React.FC = () => {
               },
               plugins: {
                 legend: {
-                  labels: { color: '#cbd5e1' }
+                  display: false // Hide default legend as we built a custom one
                 },
                 tooltip: {
                   backgroundColor: '#1e293b',
                   titleColor: '#f8fafc',
                   bodyColor: '#cbd5e1',
                   borderColor: '#334155',
-                  borderWidth: 1
+                  borderWidth: 1,
+                  padding: 10,
+                  displayColors: true,
+                  callbacks: {
+                     label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            label += context.parsed.y.toLocaleString();
+                            if (context.dataset.yAxisID === 'y1') label += 'x';
+                        }
+                        return label;
+                     }
+                  }
                 }
               },
               scales: {
@@ -250,7 +357,15 @@ const App: React.FC = () => {
                   display: true,
                   position: 'left',
                   grid: { color: '#334155' },
-                  ticks: { color: '#94a3b8' }
+                  ticks: { 
+                      color: '#94a3b8',
+                      callback: function(value) {
+                        if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
+                        if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                        if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+                        return value;
+                      }
+                  }
                 },
                 y1: {
                   type: 'linear',
@@ -275,7 +390,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `sino-us-pulse-${data.title.replace(/\s+/g, '-').toLowerCase()}.html`;
+    a.download = cleanFilename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -321,13 +436,26 @@ const App: React.FC = () => {
             </div>
         </div>
 
-        <div className="px-6 py-4 border-b border-slate-800">
-             <button 
-                onClick={toggleLanguage}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+        <div className="px-6 py-4 border-b border-slate-800 flex gap-2">
+            <button 
+                onClick={() => changeLanguage('zh')}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    language === 'zh' 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'text-slate-400 bg-slate-800 hover:bg-slate-700 hover:text-slate-200'
+                }`}
             >
-                <Languages className="w-4 h-4" />
-                <span>{language === 'en' ? 'English' : '中文 (简体)'}</span>
+                中文
+            </button>
+            <button 
+                onClick={() => changeLanguage('en')}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    language === 'en' 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'text-slate-400 bg-slate-800 hover:bg-slate-700 hover:text-slate-200'
+                }`}
+            >
+                English
             </button>
         </div>
 
