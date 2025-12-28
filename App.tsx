@@ -116,9 +116,10 @@ const App: React.FC = () => {
     const chinaLabel = language === 'zh' ? '中国' : 'China';
     const ratioLabel = language === 'zh' ? '美/中 倍数' : 'USA/China Ratio';
 
-    // Filename: [Topic]-[AppName].html
+    // Filename: [Topic]-[AppName]-[Lang].html
     const filenameTitle = data.titleEn || data.title;
-    const cleanFilename = `${filenameTitle.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-sino-us-pulse.html`;
+    const langSuffix = language === 'zh' ? '-zh' : '-en';
+    const cleanFilename = `${filenameTitle.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-sino-us-pulse${langSuffix}.html`;
 
     // Construct the full HTML file with embedded Chart.js for interactivity
     const htmlContent = `
@@ -148,12 +149,12 @@ const App: React.FC = () => {
             left: 0;
             width: 100%;
             height: 64px;
-            background-color: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(8px);
+            background-color: #0f172a; /* Solid background */
             border-bottom: 1px solid #334155;
             z-index: 50;
             display: flex;
             align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
           }
           .container-custom {
             max-width: 56rem; /* 4xl */
@@ -183,13 +184,13 @@ const App: React.FC = () => {
       <body>
         <!-- Fixed Header -->
         <div class="fixed-header">
-           <div class="container-custom flex items-center gap-3">
+           <div class="container-custom flex items-center gap-3 h-full">
               <!-- Inline SVG Logo for the header -->
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-8 h-8 rounded-lg bg-slate-800 p-1 border border-slate-700">
                 <rect width="512" height="512" rx="100" fill="#0f172a"/>
                 <path d="M96 256h64l48-112 64 224 64-112h80" stroke="#818cf8" stroke-width="48" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <a href="https://uc.324893.xyz/" target="_blank" class="text-indigo-500 font-bold text-xl hover:text-indigo-400 transition-colors">Sino-US Pulse</a>
+              <a href="https://uc.324893.xyz/" target="_blank" class="text-indigo-500 font-bold text-xl hover:text-indigo-400 transition-colors no-underline">Sino-US Pulse</a>
            </div>
         </div>
 
