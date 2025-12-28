@@ -93,7 +93,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
     const { payload } = props;
     
     return (
-      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs mt-4 pb-2 w-full">
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs mt-8 pb-2 w-full">
         {/* Actual Chart Legend Items */}
         <div className="flex items-center gap-4">
           {payload.map((entry: any, index: number) => (
@@ -159,7 +159,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
               top: 10,
               right: 0,
               left: 0,
-              bottom: 0,
+              bottom: 20,
             }}
           >
             <defs>
