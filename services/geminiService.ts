@@ -4,8 +4,8 @@ import { ComparisonResponse, Language } from "../types";
 // Initialize the API client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Bump cache version to invalidate old data missing titleEn
-const CACHE_PREFIX = 'sino_pulse_cache_v2_';
+// Bump cache version to invalidate old data structure
+const CACHE_PREFIX = 'sino_pulse_cache_v4_';
 
 export const fetchComparisonData = async (
   query: string,
@@ -32,8 +32,8 @@ export const fetchComparisonData = async (
   const modelId = "gemini-3-flash-preview"; 
 
   const languageInstruction = language === 'zh' 
-    ? "Provide the response content in Simplified Chinese. Ensure the 'summary', 'detailedAnalysis', and 'futureOutlook' are formatted with Markdown using bullet points for key insights to avoid walls of text." 
-    : "Provide the response content in English. Ensure the 'summary', 'detailedAnalysis', and 'futureOutlook' are formatted with Markdown using bullet points for key insights to avoid walls of text.";
+    ? "Provide the response content in Simplified Chinese. Ensure the 'detailedAnalysis' is formatted with Markdown using bullet points for key insights to avoid walls of text." 
+    : "Provide the response content in English. Ensure the 'detailedAnalysis' is formatted with Markdown using bullet points for key insights to avoid walls of text.";
 
   const prompt = `
     Generate a comparative analysis and historical data dataset between China and the United States for the following topic: "${query}".
@@ -47,9 +47,9 @@ export const fetchComparisonData = async (
        - 'title': The display title in the requested language (${language}). Format MUST be "Sino-US [Topic] Annual Comparison" (or "中美[Topic]年度对比" in Chinese). **Do NOT** include specific year ranges (e.g., 1945-2024) or words like "Analysis" (分析) in the title.
        - 'titleEn': Always provide the title in English, regardless of the requested language. Format: "Sino-US [Topic] Annual Comparison".
     6. **Content Structure**:
-       - **Summary**: Key takeaways in bullet points.
-       - **Detailed Analysis**: A structured markdown analysis explaining the trends, eras, and key turning points (use headers/bullet points).
-       - **Future Outlook**: Predictions in bullet points.
+       - **Summary**: A concise executive summary of the comparison. **Do NOT** include a header like "Summary" or "Introduction" at the start.
+       - **Detailed Analysis**: A structured markdown analysis explaining the trends, eras, and key turning points (use headers/bullet points). **Do NOT** include a main header like "Trend Analysis" at the start.
+       - **Future Outlook**: A prediction of future trends based on current data. **Do NOT** include a header like "Future Outlook" at the start.
        - **Sources**: List 3-5 primary data sources (e.g., World Bank, IMF, Statista) used to derive this data. Provide the source name and a direct or general URL to the data.
     7. **Language**: ${languageInstruction}
     8. Return strict JSON.
@@ -97,7 +97,7 @@ export const fetchComparisonData = async (
               description: "List of data sources with URLs"
             }
           },
-          required: ["title", "titleEn", "data", "yAxisLabel", "summary", "detailedAnalysis", "sources"],
+          required: ["title", "titleEn", "data", "yAxisLabel", "summary", "detailedAnalysis", "futureOutlook", "sources"],
         },
       },
     });

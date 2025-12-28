@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ComparisonResponse, Language } from '../types';
-import { TrendingUp, Activity, Telescope, BookOpen, ExternalLink } from 'lucide-react';
+import { TrendingUp, BookOpen, ExternalLink, Lightbulb, Telescope } from 'lucide-react';
 
 interface AnalysisPanelProps {
   data: ComparisonResponse;
@@ -10,7 +10,7 @@ interface AnalysisPanelProps {
 
 const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ data, language }) => {
   const t = {
-    summary: language === 'zh' ? '摘要' : 'Summary',
+    summary: language === 'zh' ? '核心摘要' : 'Executive Summary',
     trendAnalysis: language === 'zh' ? '趋势分析' : 'Trend Analysis',
     futureOutlook: language === 'zh' ? '未来展望' : 'Future Outlook',
     sources: language === 'zh' ? '数据来源参考' : 'Data Sources'
@@ -45,16 +45,18 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ data, language }) => {
   return (
     <div className="flex flex-col gap-6 mt-8" id="analysis-content">
       
-      {/* Summary Card */}
-      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full">
-        <div className="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Activity className="w-6 h-6 text-blue-400" />
+       {/* Summary Card */}
+       {data.summary && (
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full">
+            <div className="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4">
+                <div className="p-2 bg-indigo-500/10 rounded-lg">
+                    <Lightbulb className="w-6 h-6 text-indigo-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">{t.summary}</h3>
             </div>
-            <h3 className="text-lg font-semibold text-white">{t.summary}</h3>
+            <MarkdownContent content={data.summary} />
         </div>
-        <MarkdownContent content={data.summary} />
-      </div>
+      )}
 
       {/* Detailed Analysis Card */}
       <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full">
@@ -68,15 +70,17 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ data, language }) => {
       </div>
 
        {/* Future Outlook Card */}
-       <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full">
-        <div className="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4">
-            <div className="p-2 bg-purple-500/10 rounded-lg">
-                <Telescope className="w-6 h-6 text-purple-400" />
+       {data.futureOutlook && (
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full">
+            <div className="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4">
+                <div className="p-2 bg-purple-500/10 rounded-lg">
+                    <Telescope className="w-6 h-6 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">{t.futureOutlook}</h3>
             </div>
-            <h3 className="text-lg font-semibold text-white">{t.futureOutlook}</h3>
+            <MarkdownContent content={data.futureOutlook} />
         </div>
-        <MarkdownContent content={data.futureOutlook} />
-      </div>
+      )}
 
       {/* Sources Card */}
       {data.sources && data.sources.length > 0 && (
