@@ -116,6 +116,10 @@ const App: React.FC = () => {
     const chinaLabel = language === 'zh' ? '中国' : 'China';
     const ratioLabel = language === 'zh' ? '美/中 倍数' : 'USA/China Ratio';
 
+    // Use English title for filename if available, otherwise fallback
+    const filenameTitle = data.titleEn || data.title;
+    const cleanFilename = `sino-us-pulse-${filenameTitle.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.html`;
+
     // Construct the full HTML file with embedded Chart.js for interactivity
     const htmlContent = `
       <!DOCTYPE html>
@@ -181,8 +185,17 @@ const App: React.FC = () => {
         </div>
 
         <script>
-          const ctx = document.getElementById('myChart');
+          const ctx = document.getElementById('myChart').getContext('2d');
           
+          // Create Gradients to match Recharts style
+          const gradientUsa = ctx.createLinearGradient(0, 0, 0, 400);
+          gradientUsa.addColorStop(0, 'rgba(59, 130, 246, 0.3)'); // Blue
+          gradientUsa.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+          const gradientChina = ctx.createLinearGradient(0, 0, 0, 400);
+          gradientChina.addColorStop(0, 'rgba(239, 68, 68, 0.3)'); // Red
+          gradientChina.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
           new Chart(ctx, {
             type: 'line',
             data: {
@@ -192,20 +205,24 @@ const App: React.FC = () => {
                   label: '${usaLabel}',
                   data: ${JSON.stringify(usaData)},
                   borderColor: '#3b82f6',
-                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                  borderWidth: 2,
+                  backgroundColor: gradientUsa,
+                  borderWidth: 3,
                   fill: true,
                   tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
                   yAxisID: 'y'
                 },
                 {
                   label: '${chinaLabel}',
                   data: ${JSON.stringify(chinaData)},
                   borderColor: '#ef4444',
-                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                  borderWidth: 2,
+                  backgroundColor: gradientChina,
+                  borderWidth: 3,
                   fill: true,
                   tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
                   yAxisID: 'y'
                 },
                 {
@@ -216,8 +233,9 @@ const App: React.FC = () => {
                   borderWidth: 2,
                   borderDash: [5, 5],
                   tension: 0.3,
-                  yAxisID: 'y1',
-                  pointRadius: 0
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
+                  yAxisID: 'y1'
                 }
               ]
             },
@@ -237,7 +255,9 @@ const App: React.FC = () => {
                   titleColor: '#f8fafc',
                   bodyColor: '#cbd5e1',
                   borderColor: '#334155',
-                  borderWidth: 1
+                  borderWidth: 1,
+                  padding: 10,
+                  displayColors: true
                 }
               },
               scales: {
@@ -250,7 +270,15 @@ const App: React.FC = () => {
                   display: true,
                   position: 'left',
                   grid: { color: '#334155' },
-                  ticks: { color: '#94a3b8' }
+                  ticks: { 
+                      color: '#94a3b8',
+                      callback: function(value) {
+                        if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
+                        if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                        if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+                        return value;
+                      }
+                  }
                 },
                 y1: {
                   type: 'linear',
@@ -275,7 +303,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `sino-us-pulse-${data.title.replace(/\s+/g, '-').toLowerCase()}.html`;
+    a.download = cleanFilename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

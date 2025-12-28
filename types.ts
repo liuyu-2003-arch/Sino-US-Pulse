@@ -13,6 +13,7 @@ export interface Source {
 
 export interface ComparisonResponse {
   title: string;
+  titleEn: string; // Added for English filename generation
   category: string;
   yAxisLabel: string;
   data: ComparisonDataPoint[];
