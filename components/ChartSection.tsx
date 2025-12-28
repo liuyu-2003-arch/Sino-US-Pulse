@@ -137,7 +137,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
             <div>
                 <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
                     {data.title}
-                    <Cloud className="w-4 h-4 text-emerald-500/50" title={t.savedLocally} />
+                    <div title={t.savedLocally}>
+                        <Cloud className="w-4 h-4 text-emerald-500/50" />
+                    </div>
                 </h2>
             </div>
             <button 

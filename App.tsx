@@ -270,6 +270,32 @@ const App: React.FC = () => {
           gradientChina.addColorStop(0, 'rgba(239, 68, 68, 0.3)'); // Red
           gradientChina.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
 
+          // Animation Settings
+          const totalDuration = 2500;
+          const dataCount = ${labels.length};
+
+          // Custom Delay Function to achieve "Fast Start, Slow End" drawing motion
+          const delayFunction = (ctx) => {
+             if (ctx.type !== 'data') return 0;
+             // Calculate normalized index (0 to 1)
+             const index = ctx.index;
+             const progress = index / (dataCount - 1);
+             
+             // To make the drawing motion fast at the start and slow at the end, 
+             // the delay between points must increase as we go.
+             // This corresponds to an Ease-In curve for the Time(Index) function.
+             // We use a cubic function for a pronounced effect.
+             return Math.pow(progress, 3) * totalDuration;
+          };
+
+          // Function to calculate previous Y for smooth drawing effect
+          const previousY = (ctx) => {
+            if (ctx.index === 0) return ctx.chart.scales.y.getPixelForValue(0);
+            const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex);
+            const prev = meta.data[ctx.index - 1];
+            return prev ? prev.getProps(['y'], true).y : 0;
+          };
+
           new Chart(ctx, {
             type: 'line',
             data: {
@@ -319,6 +345,34 @@ const App: React.FC = () => {
               interaction: {
                 mode: 'index',
                 intersect: false,
+              },
+              animation: {
+                x: {
+                    type: 'number',
+                    easing: 'linear',
+                    duration: 250, // Short duration to bridge the gap between delays without looking stepped
+                    from: NaN, 
+                    delay(ctx) {
+                        if (ctx.type !== 'data' || ctx.xStarted) {
+                            return 0;
+                        }
+                        ctx.xStarted = true;
+                        return delayFunction(ctx);
+                    }
+                },
+                y: {
+                    type: 'number',
+                    easing: 'linear',
+                    duration: 250,
+                    from: previousY,
+                    delay(ctx) {
+                        if (ctx.type !== 'data' || ctx.yStarted) {
+                            return 0;
+                        }
+                        ctx.yStarted = true;
+                        return delayFunction(ctx);
+                    }
+                }
               },
               plugins: {
                 legend: {

@@ -22,9 +22,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ data, language }) => {
         className="text-sm text-slate-300"
         components={{
             // Headers: Map h1/h2/h3 to styled components with good spacing
-            h1: ({node, ...props}) => <h3 className="text-lg font-bold text-white mt-5 mb-3 block border-b border-slate-700 pb-1" {...props} />,
-            h2: ({node, ...props}) => <h4 className="text-base font-bold text-slate-100 mt-4 mb-2 block" {...props} />,
-            h3: ({node, ...props}) => <h5 className="text-sm font-bold text-indigo-300 mt-3 mb-1 block" {...props} />,
+            h1: ({node, ...props}) => <h3 className="text-lg font-bold text-white mt-6 mb-3 block border-b border-slate-700 pb-1" {...props} />,
+            h2: ({node, ...props}) => <h4 className="text-base font-bold text-slate-100 mt-5 mb-2 block" {...props} />,
+            // Use h3 for the era headers we requested in the prompt
+            h3: ({node, ...props}) => <h5 className="text-sm font-bold text-indigo-300 mt-6 mb-2 block uppercase tracking-wide" {...props} />,
             // Lists
             ul: ({node, ...props}) => <ul className="list-disc pl-5 space-y-2 mb-3 text-slate-300 marker:text-indigo-500" {...props} />,
             ol: ({node, ...props}) => <ol className="list-decimal pl-5 space-y-2 mb-3 text-slate-300 marker:text-indigo-500" {...props} />,

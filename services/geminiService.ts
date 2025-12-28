@@ -5,7 +5,7 @@ import { ComparisonResponse, Language } from "../types";
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // Bump cache version to invalidate old data structure
-const CACHE_PREFIX = 'sino_pulse_cache_v4_';
+const CACHE_PREFIX = 'sino_pulse_cache_v5_';
 
 export const fetchComparisonData = async (
   query: string,
@@ -32,8 +32,8 @@ export const fetchComparisonData = async (
   const modelId = "gemini-3-flash-preview"; 
 
   const languageInstruction = language === 'zh' 
-    ? "Provide the response content in Simplified Chinese. Ensure the 'detailedAnalysis' is formatted with Markdown using bullet points for key insights to avoid walls of text." 
-    : "Provide the response content in English. Ensure the 'detailedAnalysis' is formatted with Markdown using bullet points for key insights to avoid walls of text.";
+    ? "Provide the response content in Simplified Chinese. **CRITICAL FOR FORMATTING**: In 'detailedAnalysis', you MUST use '###' for era headers (e.g. ### 1945-1979) and bullet points. NEVER write a single long paragraph. Always use double newlines between sections." 
+    : "Provide the response content in English. **CRITICAL FOR FORMATTING**: In 'detailedAnalysis', you MUST use '###' for era headers and bullet points. NEVER write a single long paragraph. Always use double newlines between sections.";
 
   const prompt = `
     Generate a comparative analysis and historical data dataset between China and the United States for the following topic: "${query}".
@@ -48,7 +48,7 @@ export const fetchComparisonData = async (
        - 'titleEn': Always provide the title in English, regardless of the requested language. Format: "Sino-US [Topic] Annual Comparison".
     6. **Content Structure**:
        - **Summary**: A concise executive summary of the comparison. **Do NOT** include a header like "Summary" or "Introduction" at the start.
-       - **Detailed Analysis**: A structured markdown analysis explaining the trends, eras, and key turning points (use headers/bullet points). **Do NOT** include a main header like "Trend Analysis" at the start.
+       - **Detailed Analysis**: A structured markdown analysis. **MUST** divide the timeline into 3-4 distinct eras. Use **'###' markdown headers** for each era (e.g., "### 1945-1978: Post-War divergence"). Use bullet points for key events within each era. Ensure double line breaks between eras. **Do NOT** include a main header like "Trend Analysis".
        - **Future Outlook**: A prediction of future trends based on current data. **Do NOT** include a header like "Future Outlook" at the start.
        - **Sources**: List 3-5 primary data sources (e.g., World Bank, IMF, Statista) used to derive this data. Provide the source name and a direct or general URL to the data.
     7. **Language**: ${languageInstruction}
