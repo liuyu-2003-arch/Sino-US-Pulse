@@ -6,6 +6,11 @@ export interface ComparisonDataPoint {
   china: number;
 }
 
+export interface Source {
+  title: string;
+  url: string;
+}
+
 export interface ComparisonResponse {
   title: string;
   category: string;
@@ -14,6 +19,7 @@ export interface ComparisonResponse {
   summary: string;
   detailedAnalysis: string;
   futureOutlook: string;
+  sources: Source[];
 }
 
 export enum ComparisonCategory {

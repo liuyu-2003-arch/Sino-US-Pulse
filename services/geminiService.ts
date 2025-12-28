@@ -31,7 +31,7 @@ export const fetchComparisonData = async (
   const modelId = "gemini-3-flash-preview"; 
 
   const languageInstruction = language === 'zh' 
-    ? "Provide the response content (title, yAxisLabel, summary, detailedAnalysis, futureOutlook) in Simplified Chinese. Ensure the 'summary', 'detailedAnalysis', and 'futureOutlook' are formatted with Markdown using bullet points for key insights to avoid walls of text." 
+    ? "Provide the response content (title, yAxisLabel, summary, detailedAnalysis, futureOutlook, sources) in Simplified Chinese. Ensure the 'summary', 'detailedAnalysis', and 'futureOutlook' are formatted with Markdown using bullet points for key insights to avoid walls of text." 
     : "Provide the response content in English. Ensure the 'summary', 'detailedAnalysis', and 'futureOutlook' are formatted with Markdown using bullet points for key insights to avoid walls of text.";
 
   const prompt = `
@@ -47,6 +47,7 @@ export const fetchComparisonData = async (
        - **Summary**: Key takeaways in bullet points.
        - **Detailed Analysis**: A structured markdown analysis explaining the trends, eras, and key turning points (use headers/bullet points).
        - **Future Outlook**: Predictions in bullet points.
+       - **Sources**: List 3-5 primary data sources (e.g., World Bank, IMF, Statista) used to derive this data. Provide the source name and a direct or general URL to the data.
     7. **Language**: ${languageInstruction}
     8. Return strict JSON.
   `;
@@ -79,8 +80,20 @@ export const fetchComparisonData = async (
             summary: { type: Type.STRING },
             detailedAnalysis: { type: Type.STRING },
             futureOutlook: { type: Type.STRING },
+            sources: { 
+              type: Type.ARRAY, 
+              items: { 
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  url: { type: Type.STRING }
+                },
+                required: ["title", "url"]
+              },
+              description: "List of data sources with URLs"
+            }
           },
-          required: ["title", "data", "yAxisLabel", "summary", "detailedAnalysis"],
+          required: ["title", "data", "yAxisLabel", "summary", "detailedAnalysis", "sources"],
         },
       },
     });

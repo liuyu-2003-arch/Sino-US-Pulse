@@ -12,11 +12,12 @@ import {
   TooltipProps
 } from 'recharts';
 import { ComparisonResponse, Language } from '../types';
-import { RefreshCw, Cloud } from 'lucide-react';
+import { RefreshCw, Cloud, Download } from 'lucide-react';
 
 interface ChartSectionProps {
   data: ComparisonResponse;
   onRefresh: () => void;
+  onDownload: () => void;
   isLoading?: boolean;
   language: Language;
 }
@@ -45,7 +46,7 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
   return null;
 };
 
-const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading, language }) => {
+const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload, isLoading, language }) => {
   // Static translations
   const t = {
     unit: language === 'zh' ? '单位' : 'Unit',
@@ -54,7 +55,8 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
     usa: language === 'zh' ? '美国' : 'United States',
     china: language === 'zh' ? '中国' : 'China',
     ratio: language === 'zh' ? '美/中 倍数' : 'USA/China Ratio',
-    savedLocally: language === 'zh' ? '本地已保存' : 'Saved locally'
+    savedLocally: language === 'zh' ? '本地已保存' : 'Saved locally',
+    download: language === 'zh' ? '下载网页' : 'Download Page'
   };
 
   // Process data to add Ratio
@@ -86,12 +88,13 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
       });
   }, [chartData]);
 
-  // Custom Legend Component to group Legend Items and Unit Label to the right
+  // Custom Legend Component to group Legend Items and Unit Label
   const renderLegend = (props: any) => {
     const { payload } = props;
     
     return (
-      <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-xs mt-8 pb-2 w-full pr-4">
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs mt-8 pb-2 w-full">
+        {/* Actual Chart Legend Items */}
         <div className="flex items-center gap-4">
           {payload.map((entry: any, index: number) => (
             <div key={`item-${index}`} className="flex items-center gap-1.5 cursor-pointer hover:opacity-80">
@@ -103,9 +106,27 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
             </div>
           ))}
         </div>
-        <div className="text-slate-500 border-l border-slate-700 pl-4 ml-2">
+        
+        {/* Separator */}
+        <div className="h-4 w-px bg-slate-700 mx-2"></div>
+
+        {/* Unit Label */}
+        <div className="text-slate-500">
             {t.unit}: {data.yAxisLabel}
         </div>
+
+        {/* Separator */}
+        <div className="h-4 w-px bg-slate-700 mx-2"></div>
+
+        {/* Download Button (Inline) */}
+        <button 
+          onClick={onDownload}
+          className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 hover:underline transition-colors"
+          title={t.download}
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>{t.download}</span>
+        </button>
       </div>
     );
   };

@@ -42,7 +42,8 @@ const App: React.FC = () => {
     loadingSub: language === 'zh' ? '正在收集关于中美对比的见解' : 'Gathering insights for USA vs China',
     errorTitle: language === 'zh' ? '错误' : 'Error',
     retry: language === 'zh' ? '重试' : 'Retry',
-    errorGeneric: language === 'zh' ? '生成数据失败。请稍后再试或检查 API 配额。' : 'Failed to generate data. Please try again later or check your API limit.'
+    errorGeneric: language === 'zh' ? '生成数据失败。请稍后再试或检查 API 配额。' : 'Failed to generate data. Please try again later or check your API limit.',
+    download: language === 'zh' ? '下载网页' : 'Download Page'
   };
 
   const toggleLanguage = () => {
@@ -96,6 +97,189 @@ const App: React.FC = () => {
       if (currentQuery) {
           loadData(currentQuery, true);
       }
+  };
+
+  const handleDownload = () => {
+    if (!data) return;
+
+    // Grab the Analysis content (innerHTML preserves the rendered HTML from ReactMarkdown)
+    const analysisElement = document.getElementById('analysis-content');
+    const analysisHtml = analysisElement ? analysisElement.innerHTML : '<div>Analysis not available</div>';
+    
+    // Prepare Data for Chart.js
+    const labels = data.data.map(d => d.year);
+    const usaData = data.data.map(d => d.usa);
+    const chinaData = data.data.map(d => d.china);
+    const ratioData = data.data.map(d => d.china ? (d.usa / d.china).toFixed(2) : 0);
+
+    const usaLabel = language === 'zh' ? '美国' : 'USA';
+    const chinaLabel = language === 'zh' ? '中国' : 'China';
+    const ratioLabel = language === 'zh' ? '美/中 倍数' : 'USA/China Ratio';
+
+    // Construct the full HTML file with embedded Chart.js for interactivity
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="${language}">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${data.title} - Sino-US Pulse</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+          body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            padding: 40px;
+          }
+          .card {
+            background-color: rgba(30, 41, 59, 0.5);
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+          }
+          canvas { width: 100% !important; height: auto !important; }
+          h3 { font-size: 1.125rem; font-weight: 600; color: white; margin-top: 1.25rem; margin-bottom: 0.75rem; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; }
+          h4 { font-size: 1rem; font-weight: 600; color: #f1f5f9; margin-top: 1rem; margin-bottom: 0.5rem; }
+          ul, ol { padding-left: 1.25rem; margin-bottom: 0.75rem; color: #cbd5e1; }
+          ul { list-style-type: disc; }
+          ol { list-style-type: decimal; }
+          li { margin-bottom: 0.25rem; }
+          p { margin-bottom: 0.75rem; line-height: 1.625; color: #cbd5e1; }
+          a { color: #818cf8; text-decoration: underline; }
+          strong { color: #818cf8; font-weight: 700; }
+        </style>
+      </head>
+      <body class="max-w-4xl mx-auto">
+        <div class="mb-8 border-b border-slate-700 pb-6">
+          <div class="flex items-center gap-3 mb-2">
+             <span class="text-indigo-500 font-bold text-xl">Sino-US Pulse</span>
+          </div>
+          <h1 class="text-3xl font-bold text-white">${data.title}</h1>
+          <p class="text-slate-400 mt-2 text-sm">Generated on ${new Date().toLocaleDateString()}</p>
+        </div>
+
+        <div class="card mb-8 bg-slate-800 p-6 rounded-xl border border-slate-700">
+           <h2 class="text-xl font-semibold mb-4 text-white">${language === 'zh' ? '数据图表' : 'Data Chart'}</h2>
+           <div class="w-full bg-slate-900/50 rounded-lg p-4 h-[400px]">
+             <canvas id="myChart"></canvas>
+           </div>
+           <div class="mt-4 text-center text-xs text-slate-500">
+             ${data.yAxisLabel}
+           </div>
+        </div>
+
+        <div class="space-y-6">
+          ${analysisHtml}
+        </div>
+
+        <div class="mt-12 pt-6 border-t border-slate-800 text-center text-slate-500 text-sm">
+           <p>Powered by Gemini 2.0 Flash • Sino-US Pulse</p>
+        </div>
+
+        <script>
+          const ctx = document.getElementById('myChart');
+          
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ${JSON.stringify(labels)},
+              datasets: [
+                {
+                  label: '${usaLabel}',
+                  data: ${JSON.stringify(usaData)},
+                  borderColor: '#3b82f6',
+                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                  borderWidth: 2,
+                  fill: true,
+                  tension: 0.3,
+                  yAxisID: 'y'
+                },
+                {
+                  label: '${chinaLabel}',
+                  data: ${JSON.stringify(chinaData)},
+                  borderColor: '#ef4444',
+                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                  borderWidth: 2,
+                  fill: true,
+                  tension: 0.3,
+                  yAxisID: 'y'
+                },
+                {
+                  label: '${ratioLabel}',
+                  data: ${JSON.stringify(ratioData)},
+                  borderColor: '#10b981',
+                  backgroundColor: 'transparent',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  tension: 0.3,
+                  yAxisID: 'y1',
+                  pointRadius: 0
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: {
+                mode: 'index',
+                intersect: false,
+              },
+              plugins: {
+                legend: {
+                  labels: { color: '#cbd5e1' }
+                },
+                tooltip: {
+                  backgroundColor: '#1e293b',
+                  titleColor: '#f8fafc',
+                  bodyColor: '#cbd5e1',
+                  borderColor: '#334155',
+                  borderWidth: 1
+                }
+              },
+              scales: {
+                x: {
+                  grid: { color: '#334155' },
+                  ticks: { color: '#94a3b8' }
+                },
+                y: {
+                  type: 'linear',
+                  display: true,
+                  position: 'left',
+                  grid: { color: '#334155' },
+                  ticks: { color: '#94a3b8' }
+                },
+                y1: {
+                  type: 'linear',
+                  display: true,
+                  position: 'right',
+                  grid: { drawOnChartArea: false },
+                  ticks: { 
+                    color: '#10b981',
+                    callback: function(value) { return value + 'x'; }
+                  }
+                }
+              }
+            }
+          });
+        </script>
+      </body>
+      </html>
+    `;
+
+    // Trigger Download
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sino-us-pulse-${data.title.replace(/\s+/g, '-').toLowerCase()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const getCategoryIcon = (category: ComparisonCategory) => {
@@ -225,11 +409,13 @@ const App: React.FC = () => {
             </div>
           ) : data ? (
             <div className="max-w-6xl mx-auto space-y-8">
+              
               {/* Chart Card */}
               <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden">
                 <ChartSection 
                     data={data} 
                     onRefresh={handleRefresh}
+                    onDownload={handleDownload}
                     isLoading={loading}
                     language={language}
                 />
