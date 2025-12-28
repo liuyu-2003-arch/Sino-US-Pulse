@@ -1,0 +1,275 @@
+
+      <!DOCTYPE html>
+      <html lang="zh">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>中美年度军事支出对比 - Sino-US Pulse</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <!-- Embedded Favicon for the downloaded file -->
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230f172a'/%3E%3Cpath d='M96 256h64l48-112 64 224 64-112h80' stroke='%23818cf8' stroke-width='32' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+        <style>
+          body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            margin: 0;
+            padding-top: 80px; /* Space for fixed header */
+            padding-bottom: 40px;
+          }
+          .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 64px;
+            background-color: #0f172a; /* Solid background */
+            border-bottom: 1px solid #334155;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          }
+          .container-custom {
+            max-width: 72rem; /* 6xl */
+            margin: 0 auto;
+            padding: 0 1.5rem; /* px-6 */
+            width: 100%;
+          }
+          .card {
+            background-color: rgba(30, 41, 59, 0.8);
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          }
+          canvas { width: 100% !important; height: auto !important; }
+          h3 { font-size: 1.125rem; font-weight: 600; color: white; margin-top: 1.25rem; margin-bottom: 0.75rem; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; }
+          h4 { font-size: 1rem; font-weight: 600; color: #f1f5f9; margin-top: 1rem; margin-bottom: 0.5rem; }
+          ul, ol { padding-left: 1.25rem; margin-bottom: 0.75rem; color: #cbd5e1; }
+          ul { list-style-type: disc; }
+          ol { list-style-type: decimal; }
+          li { margin-bottom: 0.25rem; }
+          p { margin-bottom: 0.75rem; line-height: 1.625; color: #cbd5e1; }
+          a { color: #818cf8; text-decoration: underline; }
+          strong { color: #818cf8; font-weight: 700; }
+        </style>
+      </head>
+      <body>
+        <!-- Fixed Header -->
+        <div class="fixed-header">
+           <div class="container-custom flex items-center gap-3 h-full">
+              <!-- Inline SVG Logo for the header -->
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-8 h-8 rounded-lg bg-slate-800 p-1 border border-slate-700">
+                <rect width="512" height="512" rx="100" fill="#0f172a"/>
+                <path d="M96 256h64l48-112 64 224 64-112h80" stroke="#818cf8" stroke-width="48" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <a href="https://uc.324893.xyz/" target="_blank" class="text-indigo-500 font-bold text-xl hover:text-indigo-400 transition-colors no-underline">Sino-US Pulse</a>
+           </div>
+        </div>
+
+        <div class="container-custom">
+            
+            <!-- Chart Card (Replicated Interface) -->
+            <div class="card h-[500px] flex flex-col relative overflow-hidden">
+               <!-- Card Header -->
+               <div class="mb-2 flex flex-row justify-between items-start shrink-0">
+                  <div>
+                      <h2 class="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+                          中美年度军事支出对比
+                          <!-- Cloud Icon -->
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500/50" title="本地已保存"><path d="M17.5 19c0-1.7-1.3-3-3-3h-11"/><path d="M3 16.5c-3.2-5.1 4-11.3 9-6.8 5.4-4.8 12.3-1.6 13.5 5.4 1.2 7-5.1 9.9-8 9.9"/></svg>
+                      </h2>
+                  </div>
+                  <!-- No Refresh Button -->
+               </div>
+
+               <!-- Chart Area -->
+               <div class="flex-1 w-full min-h-0 relative">
+                 <canvas id="myChart"></canvas>
+               </div>
+               
+               <!-- Custom Legend to match UI -->
+               <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs mt-8 pb-2 w-full shrink-0">
+                  <div class="flex items-center gap-4">
+                     <!-- USA Legend -->
+                     <div class="flex items-center gap-1.5 cursor-pointer opacity-100">
+                        <div class="w-2.5 h-2.5 rounded-full" style="background-color: #3b82f6;"></div>
+                        <span class="text-slate-300 font-medium">美国</span>
+                     </div>
+                     <!-- China Legend -->
+                     <div class="flex items-center gap-1.5 cursor-pointer opacity-100">
+                        <div class="w-2.5 h-2.5 rounded-full" style="background-color: #ef4444;"></div>
+                        <span class="text-slate-300 font-medium">中国</span>
+                     </div>
+                     <!-- Ratio Legend -->
+                     <div class="flex items-center gap-1.5 cursor-pointer opacity-100">
+                        <div class="w-2.5 h-2.5 rounded-full" style="background-color: #10b981;"></div>
+                        <span class="text-slate-300 font-medium">美/中 倍数</span>
+                     </div>
+                  </div>
+                  
+                  <div class="h-4 w-px bg-slate-700 mx-2"></div>
+                  
+                  <div class="text-slate-500">
+                     单位: 10亿美元 (当前价格)
+                  </div>
+                  
+                  <!-- No Download Button -->
+               </div>
+            </div>
+
+            <!-- Analysis Content -->
+            <div class="space-y-6">
+              <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full"><div class="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4"><div class="p-2 bg-indigo-500/10 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb w-6 h-6 text-indigo-400" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg></div><h3 class="text-lg font-semibold text-white">核心摘要</h3></div><p class="mb-3 leading-7 text-slate-300">自1945年以来，美国的年度军事支出始终位居世界首位，在冷战和21世纪初的反恐战争中经历了多次显著的波峰。中国自1990年代后期开始随经济腾飞稳步增加军费，目前已稳居世界第二。虽然美国在绝对金额上仍保持数倍优势，但中方的增长速度和投入效率已引起全球关注，双方在印太地区的投入正在重塑全球安全格局。</p></div><div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full"><div class="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4"><div class="p-2 bg-emerald-500/10 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-6 h-6 text-emerald-400" aria-hidden="true"><path d="M16 7h6v6"></path><path d="m22 7-8.5 8.5-5-5L2 17"></path></svg></div><h3 class="text-lg font-semibold text-white">趋势分析</h3></div><h5 class="text-sm font-bold text-indigo-300 mt-3 mb-1 block">1. 冷战初期的差距 (1945-1970)</h5>
+<ul class="list-disc pl-5 space-y-2 mb-3 text-slate-300 marker:text-indigo-500">
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">二战复员与调整</strong>: 1945年美国军费处于历史高位，随后因战争结束大幅下降。1950年代朝鮮战争爆发促使美国军费再次飙升，确立了冷战时期的国防基调。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">中国起步阶段</strong>: 新中国成立初期受制于经济总量，军费极低，主要依靠有限的资源进行国防基础建设，在1960年代中期因中苏关系破裂和核计划有所提升。</li>
+</ul>
+<h5 class="text-sm font-bold text-indigo-300 mt-3 mb-1 block">2. 战略扩张与冷战终结 (1971-1999)</h5>
+<ul class="list-disc pl-5 space-y-2 mb-3 text-slate-300 marker:text-indigo-500">
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">美国的波段性投入</strong>: 1980年代里根政府启动大规模军备竞赛，美国军费显著增长以应对苏联威胁。冷战结束后，1990年代出现短暂的“和平红利”期，开支趋于平稳甚至略有回落。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">中国的发展忍耐期</strong>: 1980年代，中国实行“军队要忍耐”，将军费控制在较低水平以支持经济改革。直到1990年代中期（台海危机后），中国才开始系统性的国防现代化。</li>
+</ul>
+<h5 class="text-sm font-bold text-indigo-300 mt-3 mb-1 block">3. 反恐战争与中国崛起 (2000-2024)</h5>
+<ul class="list-disc pl-5 space-y-2 mb-3 text-slate-300 marker:text-indigo-500">
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">美国的反恐十年</strong>: 9/11事件后，美国在阿富汗和伊拉克战场的投入导致军费急剧攀升，在2010年达到近7000亿美元的高点。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">中国跨越式增长</strong>: 随着GDP总量跃居世界第二，中国军费在21世纪前20年保持了近20年的两位数或高个位数增长。2024年中国军费预算已超过3000亿美元，虽然仅为美国的约三分之一，但在采购力和本国制造效率上具有极强竞争力。</li>
+<li class="pl-1 leading-relaxed"><strong class="font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded mx-0.5">当前竞争格局</strong>: 2020年后，美国因大国竞争战略（NDS）再次提高研发和前沿部署预算，而中国则聚焦于海军与空军的全面现代化。</li>
+</ul></div><div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full"><div class="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4"><div class="p-2 bg-purple-500/10 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-telescope w-6 h-6 text-purple-400" aria-hidden="true"><path d="m10.065 12.493-6.18 1.318a.934.934 0 0 1-1.108-.702l-.537-2.15a1.07 1.07 0 0 1 .691-1.265l13.504-4.44"></path><path d="m13.56 11.747 4.332-.924"></path><path d="m16 21-3.105-6.21"></path><path d="M16.485 5.94a2 2 0 0 1 1.455-2.425l1.09-.272a1 1 0 0 1 1.212.727l1.515 6.06a1 1 0 0 1-.727 1.213l-1.09.272a2 2 0 0 1-2.425-1.455z"></path><path d="m6.158 8.633 1.114 4.456"></path><path d="m8 21 3.105-6.21"></path><circle cx="12" cy="13" r="2"></circle></svg></div><h3 class="text-lg font-semibold text-white">未来展望</h3></div><p class="mb-3 leading-7 text-slate-300">展望未来，中美军事支出的竞争将进入“质量驱动”的新阶段。美国预计将持续将军费重点转向人工智能、量子计算及高超音速武器的研发，年度开支可能在2030年前突破1.1万亿美元。中国将继续保持与经济增长相匹配的军费增速，致力于在2035年基本实现国防和军队现代化。随着双方在印太地区的技术博弈加剧，两国的军事预算占GDP比例可能会因地缘压力而被迫回升。</p></div><div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full"><div class="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4"><div class="p-2 bg-slate-500/10 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open w-6 h-6 text-slate-400" aria-hidden="true"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg></div><h3 class="text-lg font-semibold text-white">数据来源参考</h3></div><ul class="space-y-2 text-slate-400 text-sm"><li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link w-4 h-4 mt-0.5 shrink-0 text-slate-500" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg><a href="https://www.sipri.org/databases/milex" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-400 transition-colors underline decoration-slate-600 hover:decoration-indigo-400 underline-offset-4">SIPRI Military Expenditure Database</a></li><li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link w-4 h-4 mt-0.5 shrink-0 text-slate-500" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg><a href="https://data.worldbank.org/indicator/MS.MIL.XPND.CD" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-400 transition-colors underline decoration-slate-600 hover:decoration-indigo-400 underline-offset-4">The World Bank - Military expenditure (current USD)</a></li><li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link w-4 h-4 mt-0.5 shrink-0 text-slate-500" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg><a href="https://www.iiss.org/publications/the-military-balance" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-400 transition-colors underline decoration-slate-600 hover:decoration-indigo-400 underline-offset-4">IISS - The Military Balance</a></li><li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link w-4 h-4 mt-0.5 shrink-0 text-slate-500" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg><a href="https://comptroller.defense.gov/Budget-Materials/" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-400 transition-colors underline decoration-slate-600 hover:decoration-indigo-400 underline-offset-4">U.S. Department of Defense Comptroller</a></li></ul></div>
+            </div>
+
+            <div class="mt-12 pt-6 border-t border-slate-800 text-center text-slate-500 text-sm">
+               <p>Powered by Gemini 2.0 Flash • <a href="https://uc.324893.xyz/" target="_blank" class="text-indigo-400 hover:text-indigo-300 transition-colors">Sino-US Pulse</a></p>
+            </div>
+        </div>
+
+        <script>
+          const ctx = document.getElementById('myChart').getContext('2d');
+          
+          // Create Gradients to match Recharts style
+          const gradientUsa = ctx.createLinearGradient(0, 0, 0, 400);
+          gradientUsa.addColorStop(0, 'rgba(59, 130, 246, 0.3)'); // Blue
+          gradientUsa.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+          const gradientChina = ctx.createLinearGradient(0, 0, 0, 400);
+          gradientChina.addColorStop(0, 'rgba(239, 68, 68, 0.3)'); // Red
+          gradientChina.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ["1945","1946","1947","1948","1949","1950","1951","1952","1953","1954","1955","1956","1957","1958","1959","1960","1961","1962","1963","1964","1965","1966","1967","1968","1969","1970","1971","1972","1973","1974","1975","1976","1977","1978","1979","1980","1981","1982","1983","1984","1985","1986","1987","1988","1989","1990","1991","1992","1993","1994","1995","1996","1997","1998","1999","2000","2001","2002","2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021","2022","2023","2024"],
+              datasets: [
+                {
+                  label: '美国',
+                  data: [82.9,42.6,12.8,9.1,13.5,14.5,33.3,46.4,48.7,42.7,39.1,39.6,41.4,42.2,43.5,45.3,47.8,52.3,52.2,51.2,51.8,63.5,75.4,80.7,81.4,79.8,74.8,77.6,78.3,85.9,92,95.5,100.9,109.2,122.3,142.6,169.9,196.4,213.9,235.4,258.1,281.3,287.4,290.3,303.5,306.1,280.2,305.1,297.6,288,278.8,271.4,276.3,274.2,280.9,301.6,312.7,356.6,415.2,465.1,503.3,527.6,556.9,621.1,668.5,698.1,711.3,684.7,639.7,609.9,596.1,600.1,605.8,648.7,731.7,778.2,806.2,876.9,916,964.8],
+                  borderColor: '#3b82f6',
+                  backgroundColor: gradientUsa,
+                  borderWidth: 3,
+                  fill: true,
+                  tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
+                  yAxisID: 'y'
+                },
+                {
+                  label: '中国',
+                  data: [0.5,0.4,0.4,0.4,0.6,1.1,2.2,2.4,2.7,2.5,2.6,2.4,2.1,2,2.3,2.4,2.5,2.7,3,3.3,3.7,4.1,4.4,4.8,5.2,5.8,6.1,6.3,6.6,6.9,7.3,7.1,7.4,7.9,10.2,10.5,10.1,10.3,10.4,10.5,10.8,10.2,10.5,10.7,11.3,10.1,10.5,12.4,12.6,10.1,12.6,14.5,16.1,17.5,18.8,22.9,27.9,32.1,35.1,40.4,45.7,55.3,68,86.3,105.6,115.7,137.9,157.3,179.8,200.8,214.1,225.7,228.5,253.5,261,252.3,285.9,292,296.4,305.2],
+                  borderColor: '#ef4444',
+                  backgroundColor: gradientChina,
+                  borderWidth: 3,
+                  fill: true,
+                  tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
+                  yAxisID: 'y'
+                },
+                {
+                  label: '美/中 倍数',
+                  data: ["165.80","106.50","32.00","22.75","22.50","13.18","15.14","19.33","18.04","17.08","15.04","16.50","19.71","21.10","18.91","18.88","19.12","19.37","17.40","15.52","14.00","15.49","17.14","16.81","15.65","13.76","12.26","12.32","11.86","12.45","12.60","13.45","13.64","13.82","11.99","13.58","16.82","19.07","20.57","22.42","23.90","27.58","27.37","27.13","26.86","30.31","26.69","24.60","23.62","28.51","22.13","18.72","17.16","15.67","14.94","13.17","11.21","11.11","11.83","11.51","11.01","9.54","8.19","7.20","6.33","6.03","5.16","4.35","3.56","3.04","2.78","2.66","2.65","2.56","2.80","3.08","2.82","3.00","3.09","3.16"],
+                  borderColor: '#10b981',
+                  backgroundColor: 'transparent',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 4,
+                  yAxisID: 'y1'
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: {
+                mode: 'index',
+                intersect: false,
+              },
+              plugins: {
+                legend: {
+                  display: false // Hide default legend as we built a custom one
+                },
+                tooltip: {
+                  backgroundColor: '#1e293b',
+                  titleColor: '#f8fafc',
+                  bodyColor: '#cbd5e1',
+                  borderColor: '#334155',
+                  borderWidth: 1,
+                  padding: 10,
+                  displayColors: true,
+                  callbacks: {
+                     label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            label += context.parsed.y.toLocaleString();
+                            if (context.dataset.yAxisID === 'y1') label += 'x';
+                        }
+                        return label;
+                     }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  grid: { color: '#334155' },
+                  ticks: { color: '#94a3b8' }
+                },
+                y: {
+                  type: 'linear',
+                  display: true,
+                  position: 'left',
+                  grid: { color: '#334155' },
+                  ticks: { 
+                      color: '#94a3b8',
+                      callback: function(value) {
+                        if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
+                        if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                        if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+                        return value;
+                      }
+                  }
+                },
+                y1: {
+                  type: 'linear',
+                  display: true,
+                  position: 'right',
+                  grid: { drawOnChartArea: false },
+                  ticks: { 
+                    color: '#10b981',
+                    callback: function(value) { return value + 'x'; }
+                  }
+                }
+              }
+            }
+          });
+        </script>
+      </body>
+      </html>
+    
