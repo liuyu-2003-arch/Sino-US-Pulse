@@ -93,7 +93,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
     const { payload } = props;
     
     return (
-      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs mt-8 pb-2 w-full">
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs mt-4 pb-2 w-full">
         {/* Actual Chart Legend Items */}
         <div className="flex items-center gap-4">
           {payload.map((entry: any, index: number) => (
@@ -133,7 +133,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
 
   return (
     <div className="w-full h-full flex flex-col">
-        <div className="mb-2 flex flex-row justify-between items-start">
+        <div className="mb-2 flex flex-row justify-between items-start shrink-0">
             <div>
                 <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
                     {data.title}
@@ -143,7 +143,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
             <button 
                 onClick={onRefresh}
                 disabled={isLoading}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-800/80 hover:bg-slate-700 hover:text-white rounded-lg border border-slate-700 transition-all disabled:opacity-50"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-800/80 hover:bg-slate-700 hover:text-white rounded-lg border border-slate-700 transition-all disabled:opacity-50 shrink-0"
                 title={t.updateData}
             >
                 <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -151,7 +151,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
             </button>
         </div>
 
-      <div className="flex-grow w-full min-h-[400px]">
+      <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
