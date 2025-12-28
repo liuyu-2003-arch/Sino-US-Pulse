@@ -116,9 +116,9 @@ const App: React.FC = () => {
     const chinaLabel = language === 'zh' ? '中国' : 'China';
     const ratioLabel = language === 'zh' ? '美/中 倍数' : 'USA/China Ratio';
 
-    // Use English title for filename if available, otherwise fallback
+    // Filename: [Topic]-[AppName].html
     const filenameTitle = data.titleEn || data.title;
-    const cleanFilename = `sino-us-pulse-${filenameTitle.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.html`;
+    const cleanFilename = `${filenameTitle.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-sino-us-pulse.html`;
 
     // Construct the full HTML file with embedded Chart.js for interactivity
     const htmlContent = `
@@ -131,12 +131,35 @@ const App: React.FC = () => {
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <!-- Embedded Favicon for the downloaded file -->
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230f172a'/%3E%3Cpath d='M96 256h64l48-112 64 224 64-112h80' stroke='%23818cf8' stroke-width='32' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
         <style>
           body { 
             font-family: 'Inter', sans-serif; 
             background-color: #0f172a; 
             color: #f8fafc; 
-            padding: 40px;
+            margin: 0;
+            padding-top: 80px; /* Space for fixed header */
+            padding-bottom: 40px;
+          }
+          .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 64px;
+            background-color: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid #334155;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+          }
+          .container-custom {
+            max-width: 56rem; /* 4xl */
+            margin: 0 auto;
+            padding: 0 1.5rem; /* px-6 */
+            width: 100%;
           }
           .card {
             background-color: rgba(30, 41, 59, 0.5);
@@ -157,31 +180,42 @@ const App: React.FC = () => {
           strong { color: #818cf8; font-weight: 700; }
         </style>
       </head>
-      <body class="max-w-4xl mx-auto">
-        <div class="mb-8 border-b border-slate-700 pb-6">
-          <div class="flex items-center gap-3 mb-2">
-             <span class="text-indigo-500 font-bold text-xl">Sino-US Pulse</span>
-          </div>
-          <h1 class="text-3xl font-bold text-white">${data.title}</h1>
-          <p class="text-slate-400 mt-2 text-sm">Generated on ${new Date().toLocaleDateString()}</p>
-        </div>
-
-        <div class="card mb-8 bg-slate-800 p-6 rounded-xl border border-slate-700">
-           <h2 class="text-xl font-semibold mb-4 text-white">${language === 'zh' ? '数据图表' : 'Data Chart'}</h2>
-           <div class="w-full bg-slate-900/50 rounded-lg p-4 h-[400px]">
-             <canvas id="myChart"></canvas>
-           </div>
-           <div class="mt-4 text-center text-xs text-slate-500">
-             ${data.yAxisLabel}
+      <body>
+        <!-- Fixed Header -->
+        <div class="fixed-header">
+           <div class="container-custom flex items-center gap-3">
+              <!-- Inline SVG Logo for the header -->
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-8 h-8 rounded-lg bg-slate-800 p-1 border border-slate-700">
+                <rect width="512" height="512" rx="100" fill="#0f172a"/>
+                <path d="M96 256h64l48-112 64 224 64-112h80" stroke="#818cf8" stroke-width="48" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <a href="https://uc.324893.xyz/" target="_blank" class="text-indigo-500 font-bold text-xl hover:text-indigo-400 transition-colors">Sino-US Pulse</a>
            </div>
         </div>
 
-        <div class="space-y-6">
-          ${analysisHtml}
-        </div>
+        <div class="container-custom">
+            <div class="mb-8 border-b border-slate-700 pb-6 mt-6">
+              <h1 class="text-3xl font-bold text-white">${data.title}</h1>
+              <p class="text-slate-400 mt-2 text-sm">Generated on ${new Date().toLocaleDateString()}</p>
+            </div>
 
-        <div class="mt-12 pt-6 border-t border-slate-800 text-center text-slate-500 text-sm">
-           <p>Powered by Gemini 2.0 Flash • Sino-US Pulse</p>
+            <div class="card mb-8 bg-slate-800 p-6 rounded-xl border border-slate-700">
+               <h2 class="text-xl font-semibold mb-4 text-white">${language === 'zh' ? '数据图表' : 'Data Chart'}</h2>
+               <div class="w-full bg-slate-900/50 rounded-lg p-4 h-[400px]">
+                 <canvas id="myChart"></canvas>
+               </div>
+               <div class="mt-4 text-center text-xs text-slate-500">
+                 ${data.yAxisLabel}
+               </div>
+            </div>
+
+            <div class="space-y-6">
+              ${analysisHtml}
+            </div>
+
+            <div class="mt-12 pt-6 border-t border-slate-800 text-center text-slate-500 text-sm">
+               <p>Powered by Gemini 2.0 Flash • <a href="https://uc.324893.xyz/" target="_blank" class="text-indigo-400 hover:text-indigo-300 transition-colors">Sino-US Pulse</a></p>
+            </div>
         </div>
 
         <script>
