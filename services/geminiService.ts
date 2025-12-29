@@ -1,55 +1,77 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ComparisonResponse, Language } from "../types";
+// Use Type-Only import to avoid runtime dependency at top-level
+import type { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-// Initialize the API client
+// Initialize the Gemini API client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Update cache version and define expiry
-const CACHE_PREFIX = 'sino_pulse_cache_v6_';
-const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 Days expiration
+// Constants
+const BUCKET_NAME = process.env.R2_BUCKET_NAME;
+const PUBLIC_URL_BASE = `https://${process.env.R2_PUBLIC_URL}`;
+const DATA_FOLDER = "sino-pulse/v1"; 
 
-interface CachedData {
-  timestamp: number;
-  payload: ComparisonResponse;
-}
+// Helper to dynamically load AWS SDK only when needed
+const uploadToR2 = async (key: string, data: any) => {
+  try {
+    // Dynamic import prevents white-screen if AWS SDK fails to load in browser
+    const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+    
+    const client = new S3Client({
+      region: "auto",
+      endpoint: process.env.R2_ENDPOINT,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+      },
+    });
+
+    const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: JSON.stringify(data),
+        ContentType: "application/json",
+        CacheControl: "public, max-age=86400" 
+    });
+
+    await client.send(command);
+    console.log(`[R2] Upload successful: ${key}`);
+  } catch (error) {
+    console.warn("[R2] Failed to initialize SDK or Upload. Is the environment correct?", error);
+  }
+};
 
 export const fetchComparisonData = async (
   query: string,
   language: Language,
   forceRefresh: boolean = false
 ): Promise<ComparisonResponse> => {
-  // Generate a robust, normalized cache key based on language and query
+  // Generate a robust, normalized key for the file
   const normalizedQuery = query.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
-  const cacheKey = `${CACHE_PREFIX}${language}_${normalizedQuery}`;
+  const fileKey = `${DATA_FOLDER}/${language}/${normalizedQuery}.json`;
+  const publicFileUrl = `${PUBLIC_URL_BASE}/${fileKey}`;
 
-  // 1. Try to load from cache if not forcing refresh
+  // 1. READ: Try to fetch from R2 Public URL first
   if (!forceRefresh) {
     try {
-      const item = localStorage.getItem(cacheKey);
-      if (item) {
-        const parsed: CachedData = JSON.parse(item);
-        
-        // Check for validity of the cached object structure
-        if (parsed.timestamp && parsed.payload) {
-            const age = Date.now() - parsed.timestamp;
-            
-            // Check Expiry
-            if (age < CACHE_EXPIRY_MS) {
-                console.log(`[Cache] Hit for "${query}" (${language}) - Age: ${(age/1000/60).toFixed(1)}m`);
-                return parsed.payload;
-            } else {
-                console.log(`[Cache] Expired for "${query}"`);
-                localStorage.removeItem(cacheKey);
-            }
+      console.log(`[R2] Checking for existing data: ${publicFileUrl}`);
+      const response = await fetch(publicFileUrl, { method: 'GET' });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.data) {
+           console.log(`[R2] Hit! Loaded "${query}" (${language}) from cloud.`);
+           return data as ComparisonResponse;
         }
+      } else if (response.status !== 404) {
+         console.warn(`[R2] Unexpected status fetching data: ${response.status}`);
       }
     } catch (e) {
-      console.warn("[Cache] Failed to read/parse local storage", e);
-      // If error parsing, clear it to be safe
-      localStorage.removeItem(cacheKey);
+      console.warn("[R2] Failed to fetch from public URL", e);
     }
   }
 
+  // 2. FETCH: Call Gemini API
   const modelId = "gemini-3-flash-preview"; 
 
   const languageInstruction = language === 'zh' 
@@ -77,7 +99,7 @@ export const fetchComparisonData = async (
   `;
 
   try {
-    console.log(`[API] Fetching new data for "${query}" in ${language}...`);
+    console.log(`[API] Fetching new data for "${query}" in ${language} (Force Refresh: ${forceRefresh})...`);
     const response = await ai.models.generateContent({
       model: modelId,
       contents: prompt,
@@ -130,18 +152,9 @@ export const fetchComparisonData = async (
 
     const result = JSON.parse(jsonText) as ComparisonResponse;
 
-    // 2. Save to cache with timestamp
-    const cacheEntry: CachedData = {
-        timestamp: Date.now(),
-        payload: result
-    };
-
-    try {
-      localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
-      console.log(`[Cache] Saved "${query}" (${language})`);
-    } catch (e) {
-      console.warn("[Cache] Failed to save to local storage (likely quota exceeded)", e);
-    }
+    // 3. WRITE: Upload to R2 Bucket (Fire and Forget)
+    // We don't await this so the user gets the result immediately.
+    uploadToR2(fileKey, result);
 
     return result;
   } catch (error) {
