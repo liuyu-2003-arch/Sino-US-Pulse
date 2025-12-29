@@ -4,27 +4,48 @@ import { ComparisonResponse, Language } from "../types";
 // Initialize the API client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Bump cache version to invalidate old data structure
-const CACHE_PREFIX = 'sino_pulse_cache_v5_';
+// Update cache version and define expiry
+const CACHE_PREFIX = 'sino_pulse_cache_v6_';
+const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 Days expiration
+
+interface CachedData {
+  timestamp: number;
+  payload: ComparisonResponse;
+}
 
 export const fetchComparisonData = async (
   query: string,
   language: Language,
   forceRefresh: boolean = false
 ): Promise<ComparisonResponse> => {
-  // Include language in cache key so we don't show English cached data when Chinese is selected
-  const cacheKey = `${CACHE_PREFIX}${language}_${query.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+  // Generate a robust, normalized cache key based on language and query
+  const normalizedQuery = query.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  const cacheKey = `${CACHE_PREFIX}${language}_${normalizedQuery}`;
 
   // 1. Try to load from cache if not forcing refresh
   if (!forceRefresh) {
     try {
-      const cachedData = localStorage.getItem(cacheKey);
-      if (cachedData) {
-        console.log(`[Cache] Hit for "${query}" (${language})`);
-        return JSON.parse(cachedData) as ComparisonResponse;
+      const item = localStorage.getItem(cacheKey);
+      if (item) {
+        const parsed: CachedData = JSON.parse(item);
+        
+        // Check for validity of the cached object structure
+        if (parsed.timestamp && parsed.payload) {
+            const age = Date.now() - parsed.timestamp;
+            
+            // Check Expiry
+            if (age < CACHE_EXPIRY_MS) {
+                console.log(`[Cache] Hit for "${query}" (${language}) - Age: ${(age/1000/60).toFixed(1)}m`);
+                return parsed.payload;
+            } else {
+                console.log(`[Cache] Expired for "${query}"`);
+                localStorage.removeItem(cacheKey);
+            }
+        }
       }
     } catch (e) {
-      console.warn("[Cache] Failed to load from local storage", e);
+      console.warn("[Cache] Failed to read/parse local storage", e);
+      // If error parsing, clear it to be safe
       localStorage.removeItem(cacheKey);
     }
   }
@@ -109,9 +130,14 @@ export const fetchComparisonData = async (
 
     const result = JSON.parse(jsonText) as ComparisonResponse;
 
-    // 2. Save to cache
+    // 2. Save to cache with timestamp
+    const cacheEntry: CachedData = {
+        timestamp: Date.now(),
+        payload: result
+    };
+
     try {
-      localStorage.setItem(cacheKey, JSON.stringify(result));
+      localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
       console.log(`[Cache] Saved "${query}" (${language})`);
     } catch (e) {
       console.warn("[Cache] Failed to save to local storage (likely quota exceeded)", e);

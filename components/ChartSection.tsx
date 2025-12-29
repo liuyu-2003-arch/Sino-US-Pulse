@@ -12,7 +12,7 @@ import {
   TooltipProps
 } from 'recharts';
 import { ComparisonResponse, Language } from '../types';
-import { RefreshCw, Cloud, Download } from 'lucide-react';
+import { RefreshCw, Cloud, Download, FileJson, FileSpreadsheet } from 'lucide-react';
 
 interface ChartSectionProps {
   data: ComparisonResponse;
@@ -56,7 +56,8 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
     china: language === 'zh' ? '中国' : 'China',
     ratio: language === 'zh' ? '美/中 倍数' : 'USA/China Ratio',
     savedLocally: language === 'zh' ? '本地已保存' : 'Saved locally',
-    download: language === 'zh' ? '下载网页' : 'Download Page'
+    download: language === 'zh' ? '下载网页' : 'Download Page',
+    exportData: language === 'zh' ? '导出数据' : 'Export Data',
   };
 
   // Process data to add Ratio
@@ -88,6 +89,39 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
       });
   }, [chartData]);
 
+  const handleDownloadCsv = () => {
+    if (!data || !data.data) return;
+    const headers = ['Year', 'USA', 'China', 'Ratio (USA/China)'];
+    const rows = data.data.map(item => {
+      const ratio = item.china ? (item.usa / item.china).toFixed(2) : '0';
+      return [item.year, item.usa, item.china, ratio].join(',');
+    });
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${(data.titleEn || data.title).replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadJson = () => {
+    if (!data) return;
+    const jsonContent = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${(data.titleEn || data.title).replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Custom Legend Component to group Legend Items and Unit Label
   const renderLegend = (props: any) => {
     const { payload } = props;
@@ -118,15 +152,34 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
         {/* Separator */}
         <div className="h-4 w-px bg-slate-700 mx-2"></div>
 
-        {/* Download Button (Inline) */}
-        <button 
-          onClick={onDownload}
-          className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 hover:underline transition-colors"
-          title={t.download}
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>{t.download}</span>
-        </button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+             <button 
+                onClick={handleDownloadCsv}
+                className="flex items-center gap-1 text-slate-400 hover:text-indigo-400 transition-colors"
+                title={t.exportData + " (CSV)"}
+             >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>CSV</span>
+             </button>
+             <button 
+                onClick={handleDownloadJson}
+                className="flex items-center gap-1 text-slate-400 hover:text-indigo-400 transition-colors"
+                title={t.exportData + " (JSON)"}
+             >
+                <FileJson className="w-3.5 h-3.5" />
+                <span>JSON</span>
+             </button>
+             <div className="h-3 w-px bg-slate-700"></div>
+             <button 
+                onClick={onDownload}
+                className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 hover:underline transition-colors font-medium"
+                title={t.download}
+             >
+                <Download className="w-3.5 h-3.5" />
+                <span>HTML</span>
+             </button>
+        </div>
       </div>
     );
   };
@@ -156,6 +209,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
+            key={data.title} /* Key prop ensures component remounts and animation replays on new data */
             data={chartData}
             margin={{
               top: 10,
@@ -222,7 +276,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
               strokeWidth={3}
               fillOpacity={1}
               fill="url(#colorUsa)"
-              animationDuration={1500}
+              animationDuration={2000}
+              animationEasing="ease-out"
+              isAnimationActive={true}
             />
             <Area
               yAxisId="left"
@@ -233,7 +289,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
               strokeWidth={3}
               fillOpacity={1}
               fill="url(#colorChina)"
-              animationDuration={1500}
+              animationDuration={2000}
+              animationEasing="ease-out"
+              isAnimationActive={true}
             />
              <Line
               yAxisId="right"
@@ -244,7 +302,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
               strokeWidth={2}
               dot={false}
               strokeDasharray="4 4"
-              animationDuration={1500}
+              animationDuration={2000}
+              animationEasing="ease-out"
+              isAnimationActive={true}
             />
           </ComposedChart>
         </ResponsiveContainer>

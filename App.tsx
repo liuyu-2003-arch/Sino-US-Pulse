@@ -271,21 +271,24 @@ const App: React.FC = () => {
           gradientChina.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
 
           // Animation Settings
-          const totalDuration = 2500;
+          const totalDuration = 2000;
           const dataCount = ${labels.length};
 
-          // Custom Delay Function to achieve "Fast Start, Slow End" drawing motion
+          // Easing function for the overall timeline (Inertial Deceleration)
+          // Maps progress (0-1) to delay scaler.
+          // Power > 1 means delays get larger gaps towards the end, causing the drawing to slow down.
+          // 2.5 creates a strong "fast start, slow end" effect like inertial scrolling.
+          const easeDelay = (t) => Math.pow(t, 2.5);
+
+          // Custom Delay Function to achieve smooth drawing motion matching Recharts
           const delayFunction = (ctx) => {
              if (ctx.type !== 'data') return 0;
              // Calculate normalized index (0 to 1)
              const index = ctx.index;
              const progress = index / (dataCount - 1);
              
-             // To make the drawing motion fast at the start and slow at the end, 
-             // the delay between points must increase as we go.
-             // This corresponds to an Ease-In curve for the Time(Index) function.
-             // We use a cubic function for a pronounced effect.
-             return Math.pow(progress, 3) * totalDuration;
+             // Apply easing to the time axis
+             return easeDelay(progress) * totalDuration;
           };
 
           // Function to calculate previous Y for smooth drawing effect
@@ -293,7 +296,7 @@ const App: React.FC = () => {
             if (ctx.index === 0) return ctx.chart.scales.y.getPixelForValue(0);
             const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex);
             const prev = meta.data[ctx.index - 1];
-            return prev ? prev.getProps(['y'], true).y : 0;
+            return prev ? prev.getProps(['y'], true).y : ctx.chart.scales.y.getPixelForValue(0);
           };
 
           new Chart(ctx, {
@@ -350,7 +353,7 @@ const App: React.FC = () => {
                 x: {
                     type: 'number',
                     easing: 'linear',
-                    duration: 250, // Short duration to bridge the gap between delays without looking stepped
+                    duration: 50, // Minimal duration for X to keep up with the cursor
                     from: NaN, 
                     delay(ctx) {
                         if (ctx.type !== 'data' || ctx.xStarted) {
@@ -362,8 +365,8 @@ const App: React.FC = () => {
                 },
                 y: {
                     type: 'number',
-                    easing: 'linear',
-                    duration: 250,
+                    easing: 'easeOutCubic', // Soft landing for each point
+                    duration: 400, // Smooth transition from previous point
                     from: previousY,
                     delay(ctx) {
                         if (ctx.type !== 'data' || ctx.yStarted) {
