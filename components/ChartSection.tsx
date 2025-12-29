@@ -12,7 +12,7 @@ import {
   TooltipProps
 } from 'recharts';
 import { ComparisonResponse, Language } from '../types';
-import { RefreshCw, Cloud, Download, FileJson, FileSpreadsheet } from 'lucide-react';
+import { RefreshCw, Database, CloudLightning, Download, FileJson, FileSpreadsheet } from 'lucide-react';
 
 interface ChartSectionProps {
   data: ComparisonResponse;
@@ -58,6 +58,8 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
     savedLocally: language === 'zh' ? '本地已保存' : 'Saved locally',
     download: language === 'zh' ? '下载网页' : 'Download Page',
     exportData: language === 'zh' ? '导出数据' : 'Export Data',
+    sourceR2: language === 'zh' ? '数据源：Cloudflare R2 (云端)' : 'Source: Cloudflare R2 (Cloud)',
+    sourceNew: language === 'zh' ? '数据源：实时生成 (正在同步云端)' : 'Source: Generated (Syncing to Cloud)',
   };
 
   // Process data to add Ratio
@@ -188,11 +190,19 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
     <div className="w-full h-full flex flex-col">
         <div className="mb-2 flex flex-row justify-between items-start shrink-0">
             <div>
-                <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-3">
                     {data.title}
-                    <div title={t.savedLocally}>
-                        <Cloud className="w-4 h-4 text-emerald-500/50" />
-                    </div>
+                    {data.source === 'r2' ? (
+                       <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 cursor-help" title={t.sourceR2}>
+                          <Database className="w-3.5 h-3.5" />
+                          <span className="text-[10px] font-bold tracking-wide">R2 CLOUD</span>
+                       </div>
+                    ) : (
+                       <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 cursor-help" title={t.sourceNew}>
+                          <CloudLightning className="w-3.5 h-3.5" />
+                          <span className="text-[10px] font-bold tracking-wide">NEW</span>
+                       </div>
+                    )}
                 </h2>
             </div>
             <button 

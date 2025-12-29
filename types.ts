@@ -21,6 +21,7 @@ export interface ComparisonResponse {
   detailedAnalysis: string;
   futureOutlook: string;
   sources: Source[];
+  source?: 'r2' | 'api';
 }
 
 export enum ComparisonCategory {

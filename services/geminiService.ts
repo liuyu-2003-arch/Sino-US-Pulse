@@ -61,7 +61,7 @@ export const fetchComparisonData = async (
         const data = await response.json();
         if (data && data.data) {
            console.log(`[R2] Hit! Loaded "${query}" (${language}) from cloud.`);
-           return data as ComparisonResponse;
+           return { ...data, source: 'r2' } as ComparisonResponse;
         }
       } else if (response.status !== 404) {
          console.warn(`[R2] Unexpected status fetching data: ${response.status}`);
@@ -151,12 +151,13 @@ export const fetchComparisonData = async (
     }
 
     const result = JSON.parse(jsonText) as ComparisonResponse;
+    const resultWithSource = { ...result, source: 'api' } as ComparisonResponse;
 
     // 3. WRITE: Upload to R2 Bucket (Fire and Forget)
     // We don't await this so the user gets the result immediately.
     uploadToR2(fileKey, result);
 
-    return result;
+    return resultWithSource;
   } catch (error) {
     console.error("Error fetching comparison data:", error);
     throw error;
