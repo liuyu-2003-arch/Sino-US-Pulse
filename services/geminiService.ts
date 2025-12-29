@@ -37,7 +37,8 @@ const uploadToR2 = async (key: string, data: any) => {
     await client.send(command);
     console.log(`[R2] Upload successful: ${key}`);
   } catch (error) {
-    console.warn("[R2] Failed to initialize SDK or Upload. Is the environment correct?", error);
+    console.warn("[R2] Failed to initialize SDK or Upload.", error);
+    throw error; // Rethrow to allow UI to show sync error state
   }
 };
 
@@ -45,7 +46,7 @@ export const fetchComparisonData = async (
   query: string,
   language: Language,
   forceRefresh: boolean = false
-): Promise<ComparisonResponse> => {
+): Promise<{ data: ComparisonResponse; uploadPromise?: Promise<void> }> => {
   // Generate a robust, normalized key for the file
   const normalizedQuery = query.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
   const fileKey = `${DATA_FOLDER}/${language}/${normalizedQuery}.json`;
@@ -61,7 +62,7 @@ export const fetchComparisonData = async (
         const data = await response.json();
         if (data && data.data) {
            console.log(`[R2] Hit! Loaded "${query}" (${language}) from cloud.`);
-           return { ...data, source: 'r2' } as ComparisonResponse;
+           return { data: { ...data, source: 'r2' } as ComparisonResponse };
         }
       } else if (response.status !== 404) {
          console.warn(`[R2] Unexpected status fetching data: ${response.status}`);
@@ -153,11 +154,10 @@ export const fetchComparisonData = async (
     const result = JSON.parse(jsonText) as ComparisonResponse;
     const resultWithSource = { ...result, source: 'api' } as ComparisonResponse;
 
-    // 3. WRITE: Upload to R2 Bucket (Fire and Forget)
-    // We don't await this so the user gets the result immediately.
-    uploadToR2(fileKey, result);
+    // 3. WRITE: Upload to R2 Bucket (Return promise for UI tracking)
+    const uploadPromise = uploadToR2(fileKey, result);
 
-    return resultWithSource;
+    return { data: resultWithSource, uploadPromise };
   } catch (error) {
     console.error("Error fetching comparison data:", error);
     throw error;

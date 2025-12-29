@@ -12,7 +12,7 @@ import {
   TooltipProps
 } from 'recharts';
 import { ComparisonResponse, Language } from '../types';
-import { RefreshCw, Database, CloudLightning, Download, FileJson, FileSpreadsheet } from 'lucide-react';
+import { RefreshCw, Database, CloudLightning, Download, FileJson, FileSpreadsheet, AlertCircle } from 'lucide-react';
 
 interface ChartSectionProps {
   data: ComparisonResponse;
@@ -20,6 +20,7 @@ interface ChartSectionProps {
   onDownload: () => void;
   isLoading?: boolean;
   language: Language;
+  syncState: 'idle' | 'syncing' | 'success' | 'error';
 }
 
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
@@ -46,7 +47,7 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
   return null;
 };
 
-const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload, isLoading, language }) => {
+const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload, isLoading, language, syncState }) => {
   // Static translations
   const t = {
     unit: language === 'zh' ? '单位' : 'Unit',
@@ -59,7 +60,10 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
     download: language === 'zh' ? '下载网页' : 'Download Page',
     exportData: language === 'zh' ? '导出数据' : 'Export Data',
     sourceR2: language === 'zh' ? '数据源：Cloudflare R2 (云端)' : 'Source: Cloudflare R2 (Cloud)',
-    sourceNew: language === 'zh' ? '数据源：实时生成 (正在同步云端)' : 'Source: Generated (Syncing to Cloud)',
+    sourceNew: language === 'zh' ? '数据源：实时生成' : 'Source: Generated',
+    syncing: language === 'zh' ? '正在同步云端...' : 'Syncing to Cloud...',
+    synced: language === 'zh' ? '已同步至云端' : 'Cloud Synced',
+    syncFailed: language === 'zh' ? '同步失败 (仅本地)' : 'Sync Failed (Local)',
   };
 
   // Process data to add Ratio
@@ -122,6 +126,55 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  // Helper to render the appropriate source badge
+  const renderSourceBadge = () => {
+    // 1. Data loaded from R2 (Cache Hit)
+    if (data.source === 'r2') {
+        return (
+           <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 cursor-help" title={t.sourceR2}>
+              <Database className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-bold tracking-wide">R2 CLOUD</span>
+           </div>
+        );
+    }
+
+    // 2. Data Generated (Source = API), check sync state
+    if (syncState === 'syncing') {
+       return (
+         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 cursor-wait animate-pulse" title={t.syncing}>
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            <span className="text-[10px] font-bold tracking-wide">SYNCING...</span>
+         </div>
+       );
+    }
+    
+    if (syncState === 'success') {
+       return (
+         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 cursor-help" title={t.synced}>
+            <CloudLightning className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold tracking-wide">CLOUD SYNCED</span>
+         </div>
+       );
+    }
+  
+    if (syncState === 'error') {
+       return (
+         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded-full text-orange-400 cursor-help" title={t.syncFailed}>
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold tracking-wide">LOCAL ONLY</span>
+         </div>
+       );
+    }
+
+    // Fallback default "NEW" badge
+    return (
+       <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 cursor-help" title={t.sourceNew}>
+          <CloudLightning className="w-3.5 h-3.5" />
+          <span className="text-[10px] font-bold tracking-wide">NEW</span>
+       </div>
+    );
   };
 
   // Custom Legend Component to group Legend Items and Unit Label
@@ -192,17 +245,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
             <div>
                 <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-3">
                     {data.title}
-                    {data.source === 'r2' ? (
-                       <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 cursor-help" title={t.sourceR2}>
-                          <Database className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-bold tracking-wide">R2 CLOUD</span>
-                       </div>
-                    ) : (
-                       <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 cursor-help" title={t.sourceNew}>
-                          <CloudLightning className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-bold tracking-wide">NEW</span>
-                       </div>
-                    )}
+                    {renderSourceBadge()}
                 </h2>
             </div>
             <button 

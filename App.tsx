@@ -31,6 +31,9 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activePresetIndex, setActivePresetIndex] = useState<number>(0);
   const [currentQuery, setCurrentQuery] = useState<string>('');
+  
+  // New State for Synchronization Status
+  const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
 
   // Translations dictionary
   const t = {
@@ -42,7 +45,7 @@ const App: React.FC = () => {
     loadingSub: language === 'zh' ? '正在收集关于中美对比的见解' : 'Gathering insights for USA vs China',
     errorTitle: language === 'zh' ? '错误' : 'Error',
     retry: language === 'zh' ? '重试' : 'Retry',
-    errorGeneric: language === 'zh' ? '生成数据失败。请稍后再试或检查 API 配额。' : 'Failed to generate data. Please try again later or check your API limit.',
+    errorGeneric: language === 'zh' ? '生成数据失败。' : 'Failed to generate data.',
     download: language === 'zh' ? '下载网页' : 'Download Page'
   };
 
@@ -67,12 +70,30 @@ const App: React.FC = () => {
   const loadData = async (query: string, forceRefresh: boolean = false) => {
     setLoading(true);
     setError(null);
+    setSyncState('idle');
     setCurrentQuery(query);
     try {
-      const result = await fetchComparisonData(query, language, forceRefresh);
-      setData(result);
-    } catch (err) {
-      setError(t.errorGeneric);
+      const { data, uploadPromise } = await fetchComparisonData(query, language, forceRefresh);
+      setData(data);
+
+      // Handle background synchronization status
+      if (data.source === 'api' && uploadPromise) {
+          setSyncState('syncing');
+          uploadPromise
+            .then(() => setSyncState('success'))
+            .catch((e) => {
+                console.error("Sync failed", e);
+                setSyncState('error');
+            });
+      } else {
+          setSyncState('idle');
+      }
+
+    } catch (err: any) {
+      // Extract Error Code
+      const code = err.status || err.code || err.cause?.code || 'UNKNOWN';
+      const errorMessage = err.message || '';
+      setError(`${t.errorGeneric} [${code}] ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -581,12 +602,12 @@ const App: React.FC = () => {
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-full text-red-400">
-                <div className="text-center">
+                <div className="text-center max-w-md">
                     <p className="text-lg font-semibold mb-2">{t.errorTitle}</p>
-                    <p>{error}</p>
+                    <p className="font-mono text-sm bg-red-950/50 border border-red-900/50 px-3 py-2 rounded mb-4 break-words">{error}</p>
                     <button 
                         onClick={() => loadData(PRESET_QUERIES[activePresetIndex > -1 ? activePresetIndex : 0].query)}
-                        className="mt-4 px-4 py-2 bg-slate-800 rounded hover:bg-slate-700 transition"
+                        className="mt-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors text-slate-200 font-medium"
                     >
                         {t.retry}
                     </button>
@@ -603,6 +624,7 @@ const App: React.FC = () => {
                     onDownload={handleDownload}
                     isLoading={loading}
                     language={language}
+                    syncState={syncState}
                 />
               </div>
 
