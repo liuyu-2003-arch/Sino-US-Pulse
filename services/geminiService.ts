@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { ComparisonResponse, Language, SavedComparison } from "../types";
+import { ComparisonResponse, Language, SavedComparison, PRESET_QUERIES } from "../types";
 // Use Type-Only import to avoid runtime dependency at top-level
 import type { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 
@@ -120,26 +120,53 @@ const updateLibraryIndex = async (newItem: LibraryIndexItem) => {
     }
 };
 
-export const listSavedComparisons = async (language: Language): Promise<SavedComparison[]> => {
-    // Strategy: 
-    // 1. Try to fetch the Index File (Preferred, has titles).
-    // 2. Fallback to raw ListObjects (Legacy, ugly titles).
+// Logic to try and repair missing Chinese titles by checking against known Presets
+const getSmartTitles = (filename: string, rawTitleZh?: string, rawTitleEn?: string) => {
+    const normalizeKey = (str: string) => str.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    const coreKey = filename.replace('.json', '');
+
+    // Check against presets
+    const matchedPreset = PRESET_QUERIES.find(p => normalizeKey(p.query) === coreKey);
+
+    let titleZh = rawTitleZh;
+    let titleEn = rawTitleEn;
+
+    // Fix Zh: If missing OR if it looks like ASCII English (e.g. "Sino-US...")
+    const isZhInvalid = !titleZh || /^[\x00-\x7F]+$/.test(titleZh);
     
+    if (isZhInvalid && matchedPreset) {
+        titleZh = matchedPreset.labelZh;
+    }
+    
+    if (!titleEn && matchedPreset) {
+        titleEn = matchedPreset.labelEn;
+    }
+
+    return { titleZh, titleEn };
+};
+
+
+export const listSavedComparisons = async (language: Language): Promise<SavedComparison[]> => {
     try {
         const index = await fetchLibraryIndex();
         
         if (index.items.length > 0) {
             return index.items
                 .sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime())
-                .map(item => ({
-                    key: item.key,
-                    filename: item.key.split('/').pop() || '',
-                    titleZh: item.titleZh,
-                    titleEn: item.titleEn,
-                    displayName: language === 'zh' ? (item.titleZh || item.titleEn) : (item.titleEn || item.titleZh),
-                    category: item.category,
-                    lastModified: new Date(item.lastModified)
-                }));
+                .map(item => {
+                    const filename = item.key.split('/').pop() || '';
+                    const { titleZh, titleEn } = getSmartTitles(filename, item.titleZh, item.titleEn);
+                    
+                    return {
+                        key: item.key,
+                        filename: filename,
+                        titleZh: titleZh,
+                        titleEn: titleEn,
+                        displayName: language === 'zh' ? (titleZh || titleEn) : (titleEn || titleZh),
+                        category: item.category,
+                        lastModified: new Date(item.lastModified)
+                    };
+                });
         }
 
         // Fallback: Use ListObjectsV2
@@ -147,10 +174,15 @@ export const listSavedComparisons = async (language: Language): Promise<SavedCom
         const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
         const client = await getS3Client();
 
-        const prefix = `${DATA_FOLDER}/${language}/`;
+        const prefix = `${DATA_FOLDER}/`; // List all folders to find both lang versions if possible, but usually just lists flattened
+        // Actually, we should probably check specific lang folder, but let's just look at 'en' as primary for legacy fallback 
+        // or check both? For simplicity in fallback mode, we assume user wants to see what's available.
+        // Let's stick to the previous logic of listing the current lang folder, 
+        // BUT we apply smart title repair.
+        
         const command = new ListObjectsV2Command({
             Bucket: BUCKET_NAME,
-            Prefix: prefix
+            Prefix: `${DATA_FOLDER}/${language}/`
         });
 
         const response = await client.send(command);
@@ -162,14 +194,23 @@ export const listSavedComparisons = async (language: Language): Promise<SavedCom
             .map(item => {
                 const filename = item.Key!.split('/').pop() || '';
                 const nameWithoutExt = filename.replace('.json', '');
-                const displayName = nameWithoutExt.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                 
+                // Try to make it look nice
+                let defaultName = nameWithoutExt.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                
+                // Apply smart repair to get Chinese title if it matches a preset
+                const { titleZh, titleEn } = getSmartTitles(filename, undefined, defaultName);
+                
+                const finalDisplayName = language === 'zh' 
+                    ? (titleZh || titleEn || defaultName) 
+                    : (titleEn || defaultName);
+
                 return {
                     key: item.Key!,
                     filename: filename,
-                    displayName: displayName, // Ugly fallback
-                    titleZh: displayName,
-                    titleEn: displayName,
+                    displayName: finalDisplayName,
+                    titleZh: titleZh || defaultName,
+                    titleEn: titleEn || defaultName,
                     lastModified: item.LastModified,
                     size: item.Size
                 };
@@ -242,7 +283,7 @@ export const fetchComparisonData = async (
     5. **Title Formatting**: 
        - 'title': The display title in the requested language (${language}). Format: "Sino-US [Topic] Comparison" (or "中美[Topic]对比"). **Do NOT** include specific year ranges (e.g., 1945-2024).
        - 'titleEn': ALWAYS provide the English title. Format: "Sino-US [Topic] Comparison". **Do NOT** include years.
-       - 'titleZh': ALWAYS provide the Chinese title. Format: "中美[Topic]对比". **Do NOT** include years.
+       - 'titleZh': ALWAYS provide the Chinese title in **Simplified Chinese Characters**. Format: "中美[Topic]对比". **Do NOT** include years.
     6. **Content Structure**:
        - **Summary**: A concise executive summary of the comparison.
        - **Detailed Analysis**: A structured markdown analysis. **MUST** divide the timeline into 3-4 distinct eras. Use **'###' markdown headers** for each era.
@@ -264,7 +305,7 @@ export const fetchComparisonData = async (
           properties: {
             title: { type: Type.STRING, description: "Display title in requested language" },
             titleEn: { type: Type.STRING, description: "English Title (No years)" },
-            titleZh: { type: Type.STRING, description: "Chinese Title (No years)" },
+            titleZh: { type: Type.STRING, description: "Chinese Title (Simplified Chinese Characters)" },
             category: { type: Type.STRING },
             yAxisLabel: { type: Type.STRING },
             data: {
@@ -308,7 +349,16 @@ export const fetchComparisonData = async (
     const result = JSON.parse(jsonText) as ComparisonResponse;
     
     // Ensure titles are populated if the model was lazy (fallback logic)
-    if (!result.titleZh) result.titleZh = language === 'zh' ? result.title : result.title;
+    // Only fallback titleZh to title if we are SURE title is Chinese or if we have no choice.
+    if (!result.titleZh) {
+        if (language === 'zh') {
+            result.titleZh = result.title;
+        } else {
+            // Try to match preset if missing
+             const { titleZh } = getSmartTitles(normalizedQuery, undefined, undefined);
+             if (titleZh) result.titleZh = titleZh;
+        }
+    }
     if (!result.titleEn) result.titleEn = language === 'en' ? result.title : result.title;
 
     const resultWithSource = { ...result, source: 'api' } as ComparisonResponse;
