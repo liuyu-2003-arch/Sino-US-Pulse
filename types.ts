@@ -1,3 +1,4 @@
+
 export type Language = 'en' | 'zh';
 
 export interface ComparisonDataPoint {
@@ -32,6 +33,14 @@ export enum ComparisonCategory {
   ENVIRONMENT = 'Environment',
   EDUCATION = 'Education',
   CUSTOM = 'Custom'
+}
+
+export interface SavedComparison {
+  key: string;
+  filename: string;
+  displayName: string;
+  lastModified?: Date;
+  size?: number;
 }
 
 export const PRESET_QUERIES = [

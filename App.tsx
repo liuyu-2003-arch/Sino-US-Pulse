@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { fetchComparisonData } from './services/geminiService';
+import { fetchComparisonData, fetchSavedComparisonByKey } from './services/geminiService';
 import { ComparisonResponse, PRESET_QUERIES, ComparisonCategory, Language } from './types';
 import ChartSection from './components/ChartSection';
 import AnalysisPanel from './components/AnalysisPanel';
+import ArchiveModal from './components/ArchiveModal';
 import { 
     Globe, 
     Search, 
@@ -12,9 +13,9 @@ import {
     Zap, 
     Users, 
     DollarSign,
-    Shield,
+    Shield, 
     Leaf,
-    Languages
+    Database
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -35,6 +36,9 @@ const App: React.FC = () => {
   // New State for Synchronization Status
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
 
+  // Archive Modal State
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+
   // Translations dictionary
   const t = {
     title: language === 'zh' ? '中美脉搏' : 'SinoUS Pulse',
@@ -46,7 +50,9 @@ const App: React.FC = () => {
     errorTitle: language === 'zh' ? '错误' : 'Error',
     retry: language === 'zh' ? '重试' : 'Retry',
     errorGeneric: language === 'zh' ? '生成数据失败。' : 'Failed to generate data.',
-    download: language === 'zh' ? '下载网页' : 'Download Page'
+    download: language === 'zh' ? '下载网页' : 'Download Page',
+    cloudLibrary: language === 'zh' ? '云端资料库' : 'Cloud Library',
+    browseSaved: language === 'zh' ? '浏览已保存的历史对比' : 'Browse saved comparisons'
   };
 
   const changeLanguage = (newLang: Language) => {
@@ -97,6 +103,29 @@ const App: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // New function to load directly from Saved Item Key
+  const loadSavedItem = async (key: string) => {
+      setIsArchiveOpen(false);
+      setIsSidebarOpen(false);
+      setLoading(true);
+      setError(null);
+      setSyncState('idle'); // Data is already saved
+      
+      try {
+          const data = await fetchSavedComparisonByKey(key);
+          setData(data);
+          // We don't set currentQuery here easily because we don't know the original query text exactly, 
+          // only the normalized filename. 
+          // However, we can keep currentQuery empty or set it to title to avoid weird refresh behavior.
+          setCurrentQuery(''); 
+          setActivePresetIndex(-1);
+      } catch (err: any) {
+          setError("Failed to load saved item.");
+      } finally {
+          setLoading(false);
+      }
   };
 
   const handlePresetClick = (index: number) => {
@@ -552,6 +581,13 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-slate-900 text-slate-100">
       
+      <ArchiveModal 
+         isOpen={isArchiveOpen} 
+         onClose={() => setIsArchiveOpen(false)} 
+         onSelect={loadSavedItem}
+         language={language}
+      />
+
       {/* Mobile Sidebar Backdrop */}
       {isSidebarOpen && (
         <div 
@@ -611,6 +647,20 @@ const App: React.FC = () => {
             />
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
           </form>
+        </div>
+
+        {/* Cloud Library Button - Added Here */}
+        <div className="px-4 pb-2">
+            <button 
+                onClick={() => setIsArchiveOpen(true)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700 bg-slate-800/30 group"
+            >
+                <div className="shrink-0 p-1 bg-emerald-500/10 rounded group-hover:bg-emerald-500/20 transition-colors">
+                    <Database className="w-4 h-4 text-emerald-400" />
+                </div>
+                <span className="truncate flex-1">{t.cloudLibrary}</span>
+                <span className="text-xs text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">R2</span>
+            </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-1">

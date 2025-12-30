@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { ComparisonResponse, Language } from "../types";
+import { ComparisonResponse, Language, SavedComparison } from "../types";
 // Use Type-Only import to avoid runtime dependency at top-level
-import type { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import type { S3Client, PutObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 
 // Initialize the Gemini API client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -12,12 +12,9 @@ const PUBLIC_URL_BASE = `https://${process.env.R2_PUBLIC_URL}`;
 const DATA_FOLDER = "sino-pulse/v1"; 
 
 // Helper to dynamically load AWS SDK only when needed
-const uploadToR2 = async (key: string, data: any) => {
-  try {
-    // Dynamic import prevents white-screen if AWS SDK fails to load in browser
-    const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
-    
-    const client = new S3Client({
+const getS3Client = async () => {
+    const { S3Client } = await import("@aws-sdk/client-s3");
+    return new S3Client({
       region: "auto",
       endpoint: process.env.R2_ENDPOINT,
       credentials: {
@@ -25,6 +22,12 @@ const uploadToR2 = async (key: string, data: any) => {
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
       },
     });
+};
+
+const uploadToR2 = async (key: string, data: any) => {
+  try {
+    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+    const client = await getS3Client();
 
     const command = new PutObjectCommand({
         Bucket: BUCKET_NAME,
@@ -40,6 +43,58 @@ const uploadToR2 = async (key: string, data: any) => {
     console.warn("[R2] Failed to initialize SDK or Upload.", error);
     throw error; // Rethrow to allow UI to show sync error state
   }
+};
+
+export const listSavedComparisons = async (language: Language): Promise<SavedComparison[]> => {
+    try {
+        const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
+        const client = await getS3Client();
+
+        const prefix = `${DATA_FOLDER}/${language}/`;
+        const command = new ListObjectsV2Command({
+            Bucket: BUCKET_NAME,
+            Prefix: prefix
+        });
+
+        const response = await client.send(command);
+        
+        if (!response.Contents) return [];
+
+        return response.Contents
+            .filter(item => item.Key?.endsWith('.json'))
+            .sort((a, b) => (b.LastModified?.getTime() || 0) - (a.LastModified?.getTime() || 0)) // Newest first
+            .map(item => {
+                const filename = item.Key!.split('/').pop() || '';
+                const nameWithoutExt = filename.replace('.json', '');
+                // Prettify: replace _ with space, capitalize
+                const displayName = nameWithoutExt.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                
+                return {
+                    key: item.Key!,
+                    filename: filename,
+                    displayName: displayName,
+                    lastModified: item.LastModified,
+                    size: item.Size
+                };
+            });
+
+    } catch (error) {
+        console.error("Failed to list saved comparisons", error);
+        return [];
+    }
+};
+
+export const fetchSavedComparisonByKey = async (key: string): Promise<ComparisonResponse> => {
+     const publicFileUrl = `${PUBLIC_URL_BASE}/${key}`;
+     try {
+        const response = await fetch(publicFileUrl);
+        if (!response.ok) throw new Error("Failed to fetch saved file");
+        const data = await response.json();
+        return { ...data, source: 'r2' };
+     } catch (e) {
+        console.error("Error fetching specific key from R2", e);
+        throw e;
+     }
 };
 
 export const fetchComparisonData = async (
