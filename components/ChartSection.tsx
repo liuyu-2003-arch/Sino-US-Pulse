@@ -130,12 +130,15 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
 
   // Helper to render the appropriate source badge
   const renderSourceBadge = () => {
+    // Shared button-like style
+    const badgeBaseClass = "flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800/80 transition-all select-none";
+
     // 1. Data loaded from R2 (Cache Hit)
     if (data.source === 'r2') {
         return (
-           <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 cursor-help" title={t.sourceR2}>
+           <div className={`${badgeBaseClass} text-emerald-400 hover:bg-slate-700/50 cursor-help`} title={t.sourceR2}>
               <Database className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-bold tracking-wide">R2 CLOUD</span>
+              <span>R2 CLOUD</span>
            </div>
         );
     }
@@ -143,36 +146,36 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
     // 2. Data Generated (Source = API), check sync state
     if (syncState === 'syncing') {
        return (
-         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 cursor-wait animate-pulse" title={t.syncing}>
+         <div className={`${badgeBaseClass} text-indigo-400 animate-pulse cursor-wait`} title={t.syncing}>
             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            <span className="text-[10px] font-bold tracking-wide">SYNCING...</span>
+            <span>SYNCING...</span>
          </div>
        );
     }
     
     if (syncState === 'success') {
        return (
-         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 cursor-help" title={t.synced}>
+         <div className={`${badgeBaseClass} text-blue-400 hover:bg-slate-700/50 cursor-help`} title={t.synced}>
             <CloudLightning className="w-3.5 h-3.5" />
-            <span className="text-[10px] font-bold tracking-wide">CLOUD SYNCED</span>
+            <span>CLOUD SYNCED</span>
          </div>
        );
     }
   
     if (syncState === 'error') {
        return (
-         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded-full text-orange-400 cursor-help" title={t.syncFailed}>
+         <div className={`${badgeBaseClass} text-orange-400 hover:bg-slate-700/50 cursor-help`} title={t.syncFailed}>
             <AlertCircle className="w-3.5 h-3.5" />
-            <span className="text-[10px] font-bold tracking-wide">LOCAL ONLY</span>
+            <span>LOCAL ONLY</span>
          </div>
        );
     }
 
     // Fallback default "NEW" badge
     return (
-       <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 cursor-help" title={t.sourceNew}>
+       <div className={`${badgeBaseClass} text-indigo-400 hover:bg-slate-700/50 cursor-help`} title={t.sourceNew}>
           <CloudLightning className="w-3.5 h-3.5" />
-          <span className="text-[10px] font-bold tracking-wide">NEW</span>
+          <span>NEW</span>
        </div>
     );
   };
@@ -245,18 +248,26 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
             <div>
                 <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-3">
                     {data.title}
-                    {renderSourceBadge()}
                 </h2>
             </div>
-            <button 
-                onClick={onRefresh}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-800/80 hover:bg-slate-700 hover:text-white rounded-lg border border-slate-700 transition-all disabled:opacity-50 shrink-0"
-                title={t.updateData}
-            >
-                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-                {isLoading ? t.updating : t.updateData}
-            </button>
+            
+            <div className="flex items-center gap-3">
+                {/* Sync Status Badge (Styled as button) */}
+                {renderSourceBadge()}
+                
+                {/* Separator Line */}
+                <div className="h-5 w-px bg-slate-700"></div>
+
+                <button 
+                    onClick={onRefresh}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-800/80 hover:bg-slate-700 hover:text-white rounded-lg border border-slate-700 transition-all disabled:opacity-50 shrink-0"
+                    title={t.updateData}
+                >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                    {isLoading ? t.updating : t.updateData}
+                </button>
+            </div>
         </div>
 
       <div className="flex-1 w-full min-h-0">

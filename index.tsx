@@ -5,6 +5,14 @@ import App from './App';
 // ✅ Polyfill for AWS SDK (Required for browser usage)
 import { Buffer } from 'buffer';
 
+declare global {
+  interface Window {
+    global: any;
+    Buffer: any;
+    process: any;
+  }
+}
+
 if (typeof window !== 'undefined') {
   window.global = window;
   window.Buffer = Buffer;
