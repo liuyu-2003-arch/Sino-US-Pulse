@@ -1,4 +1,5 @@
 
+
 export type Language = 'en' | 'zh';
 
 export interface ComparisonDataPoint {
@@ -14,7 +15,8 @@ export interface Source {
 
 export interface ComparisonResponse {
   title: string;
-  titleEn: string; // Added for English filename generation
+  titleEn: string;
+  titleZh: string; // Added for explicit Chinese archiving
   category: string;
   yAxisLabel: string;
   data: ComparisonDataPoint[];

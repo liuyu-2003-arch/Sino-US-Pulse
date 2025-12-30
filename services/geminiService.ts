@@ -136,7 +136,7 @@ export const listSavedComparisons = async (language: Language): Promise<SavedCom
                     filename: item.key.split('/').pop() || '',
                     titleZh: item.titleZh,
                     titleEn: item.titleEn,
-                    displayName: language === 'zh' ? item.titleZh : item.titleEn,
+                    displayName: language === 'zh' ? (item.titleZh || item.titleEn) : (item.titleEn || item.titleZh),
                     category: item.category,
                     lastModified: new Date(item.lastModified)
                 }));
@@ -228,8 +228,8 @@ export const fetchComparisonData = async (
   const modelId = "gemini-3-flash-preview"; 
 
   const languageInstruction = language === 'zh' 
-    ? "Provide the response content in Simplified Chinese. **CRITICAL FOR FORMATTING**: In 'detailedAnalysis', you MUST use '###' for era headers (e.g. ### 1945-1979) and bullet points. NEVER write a single long paragraph. Always use double newlines between sections." 
-    : "Provide the response content in English. **CRITICAL FOR FORMATTING**: In 'detailedAnalysis', you MUST use '###' for era headers and bullet points. NEVER write a single long paragraph. Always use double newlines between sections.";
+    ? "Provide the 'detailedAnalysis', 'summary', 'futureOutlook' and 'yAxisLabel' content in Simplified Chinese. **CRITICAL FOR FORMATTING**: In 'detailedAnalysis', you MUST use '###' for era headers (e.g. ### 1945-1979) and bullet points. NEVER write a single long paragraph. Always use double newlines between sections." 
+    : "Provide the 'detailedAnalysis', 'summary', 'futureOutlook' and 'yAxisLabel' content in English. **CRITICAL FOR FORMATTING**: In 'detailedAnalysis', you MUST use '###' for era headers and bullet points. NEVER write a single long paragraph. Always use double newlines between sections.";
 
   const prompt = `
     Generate a comparative analysis and historical data dataset between China and the United States for the following topic: "${query}".
@@ -240,13 +240,14 @@ export const fetchComparisonData = async (
     3. **Missing Data**: If specific yearly data is missing, interpolate reasonably or use 0 if the metric did not exist at that time.
     4. Both 'usa' and 'china' values must be numbers.
     5. **Title Formatting**: 
-       - 'title': The display title in the requested language (${language}). Format MUST be "Sino-US [Topic] Annual Comparison" (or "中美[Topic]年度对比" in Chinese). **Do NOT** include specific year ranges (e.g., 1945-2024) or words like "Analysis" (分析) in the title.
-       - 'titleEn': Always provide the title in English, regardless of the requested language. Format: "Sino-US [Topic] Annual Comparison".
+       - 'title': The display title in the requested language (${language}). Format: "Sino-US [Topic] Comparison" (or "中美[Topic]对比"). **Do NOT** include specific year ranges (e.g., 1945-2024).
+       - 'titleEn': ALWAYS provide the English title. Format: "Sino-US [Topic] Comparison". **Do NOT** include years.
+       - 'titleZh': ALWAYS provide the Chinese title. Format: "中美[Topic]对比". **Do NOT** include years.
     6. **Content Structure**:
-       - **Summary**: A concise executive summary of the comparison. **Do NOT** include a header like "Summary" or "Introduction" at the start.
-       - **Detailed Analysis**: A structured markdown analysis. **MUST** divide the timeline into 3-4 distinct eras. Use **'###' markdown headers** for each era (e.g., "### 1945-1978: Post-War divergence"). Use bullet points for key events within each era. Ensure double line breaks between eras. **Do NOT** include a main header like "Trend Analysis".
-       - **Future Outlook**: A prediction of future trends based on current data. **Do NOT** include a header like "Future Outlook" at the start.
-       - **Sources**: List 3-5 primary data sources (e.g., World Bank, IMF, Statista) used to derive this data. Provide the source name and a direct or general URL to the data.
+       - **Summary**: A concise executive summary of the comparison.
+       - **Detailed Analysis**: A structured markdown analysis. **MUST** divide the timeline into 3-4 distinct eras. Use **'###' markdown headers** for each era.
+       - **Future Outlook**: A prediction of future trends.
+       - **Sources**: List 3-5 primary data sources.
     7. **Language**: ${languageInstruction}
     8. Return strict JSON.
   `;
@@ -261,8 +262,9 @@ export const fetchComparisonData = async (
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            title: { type: Type.STRING },
-            titleEn: { type: Type.STRING, description: "Title in English for filename usage" },
+            title: { type: Type.STRING, description: "Display title in requested language" },
+            titleEn: { type: Type.STRING, description: "English Title (No years)" },
+            titleZh: { type: Type.STRING, description: "Chinese Title (No years)" },
             category: { type: Type.STRING },
             yAxisLabel: { type: Type.STRING },
             data: {
@@ -293,7 +295,7 @@ export const fetchComparisonData = async (
               description: "List of data sources with URLs"
             }
           },
-          required: ["title", "titleEn", "data", "yAxisLabel", "summary", "detailedAnalysis", "futureOutlook", "sources"],
+          required: ["title", "titleEn", "titleZh", "data", "yAxisLabel", "summary", "detailedAnalysis", "futureOutlook", "sources"],
         },
       },
     });
@@ -304,6 +306,11 @@ export const fetchComparisonData = async (
     }
 
     const result = JSON.parse(jsonText) as ComparisonResponse;
+    
+    // Ensure titles are populated if the model was lazy (fallback logic)
+    if (!result.titleZh) result.titleZh = language === 'zh' ? result.title : result.title;
+    if (!result.titleEn) result.titleEn = language === 'en' ? result.title : result.title;
+
     const resultWithSource = { ...result, source: 'api' } as ComparisonResponse;
 
     // 3. WRITE: Upload to R2 Bucket AND Update Index
@@ -311,7 +318,7 @@ export const fetchComparisonData = async (
         uploadToR2(fileKey, result),
         updateLibraryIndex({
             key: fileKey,
-            titleZh: language === 'zh' ? result.title : result.titleEn, // If generated in En, En is Zh title fallback
+            titleZh: result.titleZh,
             titleEn: result.titleEn,
             category: result.category,
             lastModified: new Date().toISOString()

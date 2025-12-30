@@ -42,10 +42,18 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
   };
 
   // Helper to get the correct display title based on language
+  // Also proactively strips year ranges like (1945-2024) if they exist in legacy data
   const getDisplayTitle = (item: SavedComparison) => {
-    if (language === 'zh' && item.titleZh) return item.titleZh;
-    if (language === 'en' && item.titleEn) return item.titleEn;
-    return item.displayName || item.filename;
+    let title = item.displayName || item.filename;
+    
+    if (language === 'zh' && item.titleZh) {
+        title = item.titleZh;
+    } else if (language === 'en' && item.titleEn) {
+        title = item.titleEn;
+    }
+
+    // Strip year ranges (e.g., "1945-2024" or "(1945-2024)")
+    return title.replace(/[\(\s]*\d{4}\s*-\s*\d{4}[\)\s]*/g, '').trim();
   };
 
   const filteredItems = items.filter(item => {
