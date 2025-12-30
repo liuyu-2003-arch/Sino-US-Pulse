@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ComparisonResponse, Language, SavedComparison } from "../types";
 // Use Type-Only import to avoid runtime dependency at top-level
-import type { S3Client, PutObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import type { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 
 // Initialize the Gemini API client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -10,6 +10,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
 const PUBLIC_URL_BASE = `https://${process.env.R2_PUBLIC_URL}`;
 const DATA_FOLDER = "sino-pulse/v1"; 
+const LIBRARY_INDEX_KEY = "sino-pulse/v1/library_index.json";
 
 // Helper to dynamically load AWS SDK only when needed
 const getS3Client = async () => {
@@ -45,8 +46,104 @@ const uploadToR2 = async (key: string, data: any) => {
   }
 };
 
-export const listSavedComparisons = async (language: Language): Promise<SavedComparison[]> => {
+// --- Library Index Management ---
+// We maintain a JSON file in R2 that acts as a database/index for all saved files.
+// This allows us to store the correct localized titles (Zh/En) and categories, 
+// which are not available in standard S3 file listings.
+
+interface LibraryIndexItem {
+    key: string;
+    titleZh: string;
+    titleEn: string;
+    category: string;
+    lastModified: string;
+}
+
+interface LibraryIndex {
+    items: LibraryIndexItem[];
+}
+
+const fetchLibraryIndex = async (): Promise<LibraryIndex> => {
     try {
+        // Try fetching via public URL for speed
+        const response = await fetch(`${PUBLIC_URL_BASE}/${LIBRARY_INDEX_KEY}?t=${Date.now()}`);
+        if (response.ok) {
+            return await response.json();
+        }
+        return { items: [] };
+    } catch (e) {
+        return { items: [] };
+    }
+};
+
+const updateLibraryIndex = async (newItem: LibraryIndexItem) => {
+    try {
+        const { PutObjectCommand, GetObjectCommand } = await import("@aws-sdk/client-s3");
+        const client = await getS3Client();
+
+        // 1. Fetch existing index (S3 consistent read preferred over public URL for updates)
+        let index: LibraryIndex = { items: [] };
+        try {
+            const getCmd = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: LIBRARY_INDEX_KEY });
+            const res = await client.send(getCmd);
+            if (res.Body) {
+                const str = await res.Body.transformToString();
+                index = JSON.parse(str);
+            }
+        } catch (e) {
+            // Index doesn't exist yet, start fresh
+            console.log("Creating new library index");
+        }
+
+        // 2. Update or Append
+        const existingIndex = index.items.findIndex(i => i.key === newItem.key);
+        if (existingIndex >= 0) {
+            index.items[existingIndex] = newItem;
+        } else {
+            index.items.push(newItem);
+        }
+
+        // 3. Save back
+        const putCmd = new PutObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: LIBRARY_INDEX_KEY,
+            Body: JSON.stringify(index),
+            ContentType: "application/json",
+            CacheControl: "no-cache" // Important for index
+        });
+        await client.send(putCmd);
+        console.log("[R2] Library Index Updated");
+
+    } catch (e) {
+        console.error("Failed to update library index", e);
+        // We don't throw here to avoid failing the main user flow if indexing fails
+    }
+};
+
+export const listSavedComparisons = async (language: Language): Promise<SavedComparison[]> => {
+    // Strategy: 
+    // 1. Try to fetch the Index File (Preferred, has titles).
+    // 2. Fallback to raw ListObjects (Legacy, ugly titles).
+    
+    try {
+        const index = await fetchLibraryIndex();
+        
+        if (index.items.length > 0) {
+            return index.items
+                .sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime())
+                .map(item => ({
+                    key: item.key,
+                    filename: item.key.split('/').pop() || '',
+                    titleZh: item.titleZh,
+                    titleEn: item.titleEn,
+                    displayName: language === 'zh' ? item.titleZh : item.titleEn,
+                    category: item.category,
+                    lastModified: new Date(item.lastModified)
+                }));
+        }
+
+        // Fallback: Use ListObjectsV2
+        console.warn("Index not found or empty, falling back to raw S3 listing");
         const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
         const client = await getS3Client();
 
@@ -57,22 +154,22 @@ export const listSavedComparisons = async (language: Language): Promise<SavedCom
         });
 
         const response = await client.send(command);
-        
         if (!response.Contents) return [];
 
         return response.Contents
             .filter(item => item.Key?.endsWith('.json'))
-            .sort((a, b) => (b.LastModified?.getTime() || 0) - (a.LastModified?.getTime() || 0)) // Newest first
+            .sort((a, b) => (b.LastModified?.getTime() || 0) - (a.LastModified?.getTime() || 0))
             .map(item => {
                 const filename = item.Key!.split('/').pop() || '';
                 const nameWithoutExt = filename.replace('.json', '');
-                // Prettify: replace _ with space, capitalize
                 const displayName = nameWithoutExt.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                 
                 return {
                     key: item.Key!,
                     filename: filename,
-                    displayName: displayName,
+                    displayName: displayName, // Ugly fallback
+                    titleZh: displayName,
+                    titleEn: displayName,
                     lastModified: item.LastModified,
                     size: item.Size
                 };
@@ -209,8 +306,17 @@ export const fetchComparisonData = async (
     const result = JSON.parse(jsonText) as ComparisonResponse;
     const resultWithSource = { ...result, source: 'api' } as ComparisonResponse;
 
-    // 3. WRITE: Upload to R2 Bucket (Return promise for UI tracking)
-    const uploadPromise = uploadToR2(fileKey, result);
+    // 3. WRITE: Upload to R2 Bucket AND Update Index
+    const uploadPromise = Promise.all([
+        uploadToR2(fileKey, result),
+        updateLibraryIndex({
+            key: fileKey,
+            titleZh: language === 'zh' ? result.title : result.titleEn, // If generated in En, En is Zh title fallback
+            titleEn: result.titleEn,
+            category: result.category,
+            lastModified: new Date().toISOString()
+        })
+    ]).then(() => void 0); // Normalize to void promise
 
     return { data: resultWithSource, uploadPromise };
   } catch (error) {

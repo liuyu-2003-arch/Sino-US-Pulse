@@ -41,9 +41,17 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
     }
   };
 
-  const filteredItems = items.filter(item => 
-    item.displayName.toLowerCase().includes(filter.toLowerCase())
-  );
+  // Helper to get the correct display title based on language
+  const getDisplayTitle = (item: SavedComparison) => {
+    if (language === 'zh' && item.titleZh) return item.titleZh;
+    if (language === 'en' && item.titleEn) return item.titleEn;
+    return item.displayName || item.filename;
+  };
+
+  const filteredItems = items.filter(item => {
+    const displayTitle = getDisplayTitle(item);
+    return displayTitle.toLowerCase().includes(filter.toLowerCase());
+  });
 
   if (!isOpen) return null;
 
@@ -104,7 +112,7 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
                 >
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-slate-200 truncate group-hover:text-indigo-400 transition-colors">
-                      {item.displayName}
+                      {getDisplayTitle(item)}
                     </h3>
                     {item.lastModified && (
                         <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">

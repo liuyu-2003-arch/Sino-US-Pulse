@@ -38,7 +38,10 @@ export enum ComparisonCategory {
 export interface SavedComparison {
   key: string;
   filename: string;
-  displayName: string;
+  displayName?: string; // Legacy fallback
+  titleZh?: string;     // New: Chinese Title
+  titleEn?: string;     // New: English Title
+  category?: string;
   lastModified?: Date;
   size?: number;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { fetchComparisonData, fetchSavedComparisonByKey } from './services/geminiService';
 import { ComparisonResponse, PRESET_QUERIES, ComparisonCategory, Language } from './types';
 import ChartSection from './components/ChartSection';
@@ -15,7 +15,8 @@ import {
     DollarSign,
     Shield, 
     Leaf,
-    Database
+    Database,
+    TrendingUp
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -25,12 +26,18 @@ const App: React.FC = () => {
     return (saved === 'en' || saved === 'zh') ? saved : 'zh'; // Default to Chinese as per request context
   });
 
+  // Popularity State (Store clicks per query string)
+  const [presetPopularity, setPresetPopularity] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('sino_pulse_popularity');
+    return saved ? JSON.parse(saved) : {};
+  });
+
   const [data, setData] = useState<ComparisonResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [customQuery, setCustomQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activePresetIndex, setActivePresetIndex] = useState<number>(0);
+  const [activePresetQuery, setActivePresetQuery] = useState<string>(PRESET_QUERIES[0].query);
   const [currentQuery, setCurrentQuery] = useState<string>('');
   
   // New State for Synchronization Status
@@ -72,6 +79,24 @@ const App: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
+
+  // Sort presets by popularity (descending)
+  const sortedPresets = useMemo(() => {
+    return [...PRESET_QUERIES].sort((a, b) => {
+        const countA = presetPopularity[a.query] || 0;
+        const countB = presetPopularity[b.query] || 0;
+        return countB - countA; // Descending order
+    });
+  }, [presetPopularity]);
+
+  const incrementPopularity = (query: string) => {
+      const newPopularity = {
+          ...presetPopularity,
+          [query]: (presetPopularity[query] || 0) + 1
+      };
+      setPresetPopularity(newPopularity);
+      localStorage.setItem('sino_pulse_popularity', JSON.stringify(newPopularity));
+  };
 
   const loadData = async (query: string, forceRefresh: boolean = false) => {
     setLoading(true);
@@ -116,11 +141,8 @@ const App: React.FC = () => {
       try {
           const data = await fetchSavedComparisonByKey(key);
           setData(data);
-          // We don't set currentQuery here easily because we don't know the original query text exactly, 
-          // only the normalized filename. 
-          // However, we can keep currentQuery empty or set it to title to avoid weird refresh behavior.
           setCurrentQuery(''); 
-          setActivePresetIndex(-1);
+          setActivePresetQuery(''); // Deselect preset
       } catch (err: any) {
           setError("Failed to load saved item.");
       } finally {
@@ -128,17 +150,18 @@ const App: React.FC = () => {
       }
   };
 
-  const handlePresetClick = (index: number) => {
-    setActivePresetIndex(index);
+  const handlePresetClick = (query: string) => {
+    setActivePresetQuery(query);
     setCustomQuery('');
-    loadData(PRESET_QUERIES[index].query);
+    incrementPopularity(query); // Track click
+    loadData(query);
     setIsSidebarOpen(false);
   };
 
   const handleCustomSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customQuery.trim()) return;
-    setActivePresetIndex(-1); // Deselect preset
+    setActivePresetQuery(''); // Deselect preset
     loadData(customQuery);
     setIsSidebarOpen(false);
   };
@@ -649,7 +672,7 @@ const App: React.FC = () => {
           </form>
         </div>
 
-        {/* Cloud Library Button - Added Here */}
+        {/* Cloud Library Button */}
         <div className="px-4 pb-2">
             <button 
                 onClick={() => setIsArchiveOpen(true)}
@@ -664,25 +687,32 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2">
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2 flex justify-between items-center">
             {t.popularDimensions}
+            <TrendingUp className="w-3 h-3 text-slate-600" />
           </h3>
-          {PRESET_QUERIES.map((preset, index) => (
-            <button
-              key={index}
-              onClick={() => handlePresetClick(index)}
-              className={`
-                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left
-                ${activePresetIndex === index 
-                  ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-600/20' 
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                }
-              `}
-            >
-              <div className="shrink-0">{getCategoryIcon(preset.category)}</div>
-              <span className="truncate">{language === 'zh' ? preset.labelZh : preset.labelEn}</span>
-            </button>
-          ))}
+          {sortedPresets.map((preset, index) => {
+            const isActive = activePresetQuery === preset.query;
+            return (
+                <button
+                key={preset.query} // Use query as key as order changes
+                onClick={() => handlePresetClick(preset.query)}
+                className={`
+                    w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left
+                    ${isActive 
+                    ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-600/20' 
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                    }
+                `}
+                >
+                <div className="shrink-0">{getCategoryIcon(preset.category)}</div>
+                <span className="truncate flex-1">{language === 'zh' ? preset.labelZh : preset.labelEn}</span>
+                {presetPopularity[preset.query] > 0 && (
+                     <span className="text-[10px] text-slate-600 font-mono">{presetPopularity[preset.query]}</span>
+                )}
+                </button>
+            );
+          })}
         </nav>
 
         <div className="p-4 border-t border-slate-800">
@@ -715,7 +745,7 @@ const App: React.FC = () => {
                     <p className="text-lg font-semibold mb-2">{t.errorTitle}</p>
                     <p className="font-mono text-sm bg-red-950/50 border border-red-900/50 px-3 py-2 rounded mb-4 break-words">{error}</p>
                     <button 
-                        onClick={() => loadData(PRESET_QUERIES[activePresetIndex > -1 ? activePresetIndex : 0].query)}
+                        onClick={() => loadData(PRESET_QUERIES[0].query)}
                         className="mt-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors text-slate-200 font-medium"
                     >
                         {t.retry}
