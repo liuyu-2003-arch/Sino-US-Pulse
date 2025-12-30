@@ -486,6 +486,69 @@ const App: React.FC = () => {
     }
   };
 
+  // Skeleton Loader Component
+  const renderSkeleton = () => (
+    <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
+        {/* Chart Skeleton */}
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-start mb-6">
+                <div className="h-8 bg-slate-700 rounded w-1/3"></div>
+                <div className="flex gap-2">
+                   <div className="h-8 w-20 bg-slate-700 rounded"></div>
+                   <div className="h-8 w-24 bg-slate-700 rounded"></div>
+                </div>
+            </div>
+
+            {/* Chart Area with Simulated Bars */}
+            <div className="flex-1 flex items-end gap-2 px-2 pb-8 border-l border-b border-slate-700/50 relative">
+                 {/* Simulated Graph Lines */}
+                {[...Array(20)].map((_, i) => (
+                   <div 
+                      key={i} 
+                      className="flex-1 bg-slate-700/30 rounded-t-sm"
+                      style={{ 
+                         height: `${20 + Math.abs(Math.sin(i)) * 60}%`,
+                         opacity: 0.5 + (i % 2) * 0.3
+                      }}
+                   ></div>
+                ))}
+            </div>
+            
+            {/* Legend Placeholder */}
+            <div className="h-6 mx-auto w-1/2 bg-slate-700/50 rounded mt-4"></div>
+
+            {/* Processing Badge Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+                <div className="bg-slate-900/80 backdrop-blur px-6 py-3 rounded-xl border border-indigo-500/30 shadow-2xl flex items-center gap-3">
+                   <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                   <div className="flex flex-col">
+                      <span className="text-indigo-200 font-medium tracking-wide text-sm">{t.loadingTitle}</span>
+                      <span className="text-slate-400 text-xs">{t.loadingSub}</span>
+                   </div>
+                </div>
+            </div>
+        </div>
+
+        {/* Analysis Cards Skeleton */}
+        <div className="flex flex-col gap-6">
+            {[1, 2, 3].map((i) => (
+               <div key={i} className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 h-48 flex flex-col gap-4">
+                  <div className="flex items-center gap-3 pb-4 border-b border-slate-700/50">
+                     <div className="w-10 h-10 bg-slate-700 rounded-lg"></div>
+                     <div className="h-6 w-1/4 bg-slate-700 rounded"></div>
+                  </div>
+                  <div className="space-y-3">
+                     <div className="h-3 w-full bg-slate-700/50 rounded"></div>
+                     <div className="h-3 w-5/6 bg-slate-700/50 rounded"></div>
+                     <div className="h-3 w-4/6 bg-slate-700/50 rounded"></div>
+                  </div>
+               </div>
+            ))}
+        </div>
+    </div>
+  );
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-900 text-slate-100">
       
@@ -595,11 +658,7 @@ const App: React.FC = () => {
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
           {loading && !data ? (
-            <div className="flex flex-col items-center justify-center h-full min-h-[400px] animate-pulse">
-                <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
-                <h2 className="text-xl font-medium text-slate-300">{t.loadingTitle}</h2>
-                <p className="text-slate-500 mt-2">{t.loadingSub}</p>
-            </div>
+            renderSkeleton()
           ) : error ? (
             <div className="flex items-center justify-center h-full text-red-400">
                 <div className="text-center max-w-md">
