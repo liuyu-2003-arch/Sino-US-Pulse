@@ -62,6 +62,12 @@ export const PRESET_QUERIES = [
     query: "GDP per capita in USD from 1960 to 2024" 
   },
   { 
+    labelEn: "Disposable Income", 
+    labelZh: "人均可支配收入", 
+    category: ComparisonCategory.ECONOMY, 
+    query: "Annual Disposable Income per Capita in USD from 1945 to 2024" 
+  },
+  { 
     labelEn: "Population Growth", 
     labelZh: "人口增长", 
     category: ComparisonCategory.DEMOGRAPHICS, 

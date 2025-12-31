@@ -124,9 +124,17 @@ const updateLibraryIndex = async (newItem: LibraryIndexItem) => {
 const getSmartTitles = (filename: string, rawTitleZh?: string, rawTitleEn?: string) => {
     const normalizeKey = (str: string) => str.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
     const coreKey = filename.replace('.json', '');
+    const normalizedCore = normalizeKey(coreKey);
 
-    // Check against presets
-    const matchedPreset = PRESET_QUERIES.find(p => normalizeKey(p.query) === coreKey);
+    // 1. Exact Preset Match
+    let matchedPreset = PRESET_QUERIES.find(p => normalizeKey(p.query) === normalizedCore);
+
+    // 2. Fuzzy/Keyword Match (Manual Overrides for common mismatches)
+    if (!matchedPreset) {
+        if (coreKey.includes('disposable_income') || coreKey.includes('income_per_capita')) {
+             matchedPreset = PRESET_QUERIES.find(p => p.labelEn.includes("Disposable Income"));
+        }
+    }
 
     let titleZh = rawTitleZh;
     let titleEn = rawTitleEn;
@@ -174,12 +182,6 @@ export const listSavedComparisons = async (language: Language): Promise<SavedCom
         const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
         const client = await getS3Client();
 
-        const prefix = `${DATA_FOLDER}/`; // List all folders to find both lang versions if possible, but usually just lists flattened
-        // Actually, we should probably check specific lang folder, but let's just look at 'en' as primary for legacy fallback 
-        // or check both? For simplicity in fallback mode, we assume user wants to see what's available.
-        // Let's stick to the previous logic of listing the current lang folder, 
-        // BUT we apply smart title repair.
-        
         const command = new ListObjectsV2Command({
             Bucket: BUCKET_NAME,
             Prefix: `${DATA_FOLDER}/${language}/`
@@ -241,7 +243,11 @@ export const fetchComparisonData = async (
   forceRefresh: boolean = false
 ): Promise<{ data: ComparisonResponse; uploadPromise?: Promise<void> }> => {
   // Generate a robust, normalized key for the file
-  const normalizedQuery = query.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  // CHANGED: Allow Chinese characters in filename to avoid "____.json" for pure Chinese queries
+  const normalizedQuery = query.trim().toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_\u4e00-\u9fa5]+/g, '');
+    
   const fileKey = `${DATA_FOLDER}/${language}/${normalizedQuery}.json`;
   const publicFileUrl = `${PUBLIC_URL_BASE}/${fileKey}`;
 

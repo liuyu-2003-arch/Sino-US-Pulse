@@ -57,8 +57,22 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
   };
 
   const filteredItems = items.filter(item => {
-    const displayTitle = getDisplayTitle(item);
-    return displayTitle.toLowerCase().includes(filter.toLowerCase());
+    const term = filter.toLowerCase().trim();
+    if (!term) return true;
+
+    // Search Strategies:
+    // 1. Check currently displayed title
+    const displayTitle = getDisplayTitle(item).toLowerCase();
+    if (displayTitle.includes(term)) return true;
+
+    // 2. Check hidden language titles (e.g. search "收入" when title is "Disposable Income")
+    if (item.titleZh && item.titleZh.toLowerCase().includes(term)) return true;
+    if (item.titleEn && item.titleEn.toLowerCase().includes(term)) return true;
+    
+    // 3. Check filename as last resort
+    if (item.filename.toLowerCase().includes(term)) return true;
+
+    return false;
   });
 
   if (!isOpen) return null;
