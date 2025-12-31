@@ -57,7 +57,12 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
     }
 
     // Strip year ranges (e.g., "1945-2024" or "(1945-2024)")
-    return title.replace(/[\(\s]*\d{4}\s*-\s*\d{4}[\)\s]*/g, '').trim();
+    title = title.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '');
+    
+    // Strip empty parentheses like "()" or "（）" or "( )"
+    title = title.replace(/[\(\（]\s*[\)\）]/g, '');
+    
+    return title.trim();
   };
 
   const filteredItems = items.filter(item => {

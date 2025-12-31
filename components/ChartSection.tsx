@@ -73,24 +73,29 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
     }));
   }, [data.data]);
 
-  // Calculate specific ticks for the X Axis (every 5 years)
+  // Calculate specific ticks for the X Axis (every 5 years) to ensure uniform spacing
   const xAxisTicks = useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
     
     // Sort just in case, though API usually returns sorted
     const sortedData = [...chartData].sort((a, b) => parseInt(a.year) - parseInt(b.year));
-    const firstYear = parseInt(sortedData[0].year);
-    const lastYear = parseInt(sortedData[sortedData.length - 1].year);
     
-    return sortedData
+    // Show strictly every 5 years (1950, 1955, etc) to keep visual spacing uniform
+    // We avoid forcing the first/last year if they don't fall on the grid, 
+    // to prevent irregular short intervals (e.g. 2020 to 2024).
+    const ticks = sortedData
       .map(d => d.year)
       .filter(yearStr => {
         const year = parseInt(yearStr);
-        // Always show first and last year
-        if (year === firstYear || year === lastYear) return true;
-        // Show every 5 years ending in 0 or 5 (e.g., 1950, 1955)
         return year % 5 === 0;
       });
+
+    // Fallback: If minimal ticks found (e.g. short range like 2011-2014), show start and end
+    if (ticks.length < 2) {
+        return [sortedData[0].year, sortedData[sortedData.length - 1].year];
+    }
+
+    return ticks;
   }, [chartData]);
 
   const handleDownloadCsv = () => {
