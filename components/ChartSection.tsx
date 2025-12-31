@@ -12,12 +12,11 @@ import {
   TooltipProps
 } from 'recharts';
 import { ComparisonResponse, Language } from '../types';
-import { RefreshCw, Database, CloudLightning, Download, FileJson, FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { RefreshCw, Database, CloudLightning, FileJson, FileSpreadsheet, AlertCircle } from 'lucide-react';
 
 interface ChartSectionProps {
   data: ComparisonResponse;
   onRefresh: () => void;
-  onDownload: () => void;
   isLoading?: boolean;
   language: Language;
   syncState: 'idle' | 'syncing' | 'success' | 'error';
@@ -47,7 +46,7 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
   return null;
 };
 
-const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload, isLoading, language, syncState }) => {
+const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading, language, syncState }) => {
   // Static translations
   const t = {
     unit: language === 'zh' ? '单位' : 'Unit',
@@ -57,7 +56,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
     china: language === 'zh' ? '中国' : 'China',
     ratio: language === 'zh' ? '美/中 倍数' : 'USA/China Ratio',
     savedLocally: language === 'zh' ? '本地已保存' : 'Saved locally',
-    download: language === 'zh' ? '下载网页' : 'Download Page',
     exportData: language === 'zh' ? '导出数据' : 'Export Data',
     sourceR2: language === 'zh' ? '数据源：Cloudflare R2 (云端)' : 'Source: Cloudflare R2 (Cloud)',
     sourceNew: language === 'zh' ? '数据源：实时生成' : 'Source: Generated',
@@ -227,15 +225,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, onDownload
              >
                 <FileJson className="w-3.5 h-3.5" />
                 <span>JSON</span>
-             </button>
-             <div className="h-3 w-px bg-slate-700"></div>
-             <button 
-                onClick={onDownload}
-                className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 hover:underline transition-colors font-medium"
-                title={t.download}
-             >
-                <Download className="w-3.5 h-3.5" />
-                <span>HTML</span>
              </button>
         </div>
       </div>
