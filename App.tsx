@@ -12,7 +12,7 @@ import {
     BarChart3, 
     Zap, 
     Users, 
-    DollarSign,
+    DollarSign, 
     Shield, 
     Leaf,
     Database,
@@ -148,6 +148,15 @@ const App: React.FC = () => {
       } finally {
           setLoading(false);
       }
+  };
+
+  // New function to handle creation from the Archive Modal
+  const handleCreateFromArchive = (query: string) => {
+      setIsArchiveOpen(false); // Close modal
+      setIsSidebarOpen(false); // Close sidebar if open
+      setCustomQuery(query);   // Update the sidebar input for visual consistency
+      setActivePresetQuery(''); // Deselect presets
+      loadData(query);         // Start generation
   };
 
   const handlePresetClick = (query: string) => {
@@ -608,6 +617,7 @@ const App: React.FC = () => {
          isOpen={isArchiveOpen} 
          onClose={() => setIsArchiveOpen(false)} 
          onSelect={loadSavedItem}
+         onCreate={handleCreateFromArchive}
          language={language}
       />
 

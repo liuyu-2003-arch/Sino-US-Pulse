@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { SavedComparison, Language } from '../types';
 import { listSavedComparisons } from '../services/geminiService';
-import { X, Calendar, Database, Search, Loader2 } from 'lucide-react';
+import { X, Calendar, Database, Search, Loader2, Plus } from 'lucide-react';
 
 interface ArchiveModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (key: string) => void;
+  onCreate: (query: string) => void; // New prop for creation
   language: Language;
 }
 
-const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, language }) => {
+const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, onCreate, language }) => {
   const [items, setItems] = useState<SavedComparison[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState('');
 
   const t = {
     title: language === 'zh' ? '云端资料库' : 'Cloud Library',
-    searchPlaceholder: language === 'zh' ? '搜索已保存的对比...' : 'Search saved comparisons...',
-    empty: language === 'zh' ? '暂无保存的记录' : 'No saved records found',
+    searchPlaceholder: language === 'zh' ? '搜索或创建新对比...' : 'Search or create new...',
+    empty: language === 'zh' ? '暂无匹配记录' : 'No matching records',
     loading: language === 'zh' ? '正在加载列表...' : 'Loading library...',
     generatedOn: language === 'zh' ? '生成于' : 'Generated on',
+    create: language === 'zh' ? '创建' : 'Create',
+    createNew: language === 'zh' ? '生成新对比' : 'Generate New',
+    createPrompt: language === 'zh' ? '未找到相关记录。是否创建新的对比？' : 'No records found. Create a new comparison?',
   };
 
   useEffect(() => {
@@ -75,6 +79,25 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
     return false;
   });
 
+  const handleCreate = () => {
+      if (filter.trim()) {
+          onCreate(filter);
+      }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+          // If there is exactly one match, maybe select it? 
+          // But usually Enter in a search bar acts as "Go".
+          // If items are filtered, we could just let them select.
+          // But if they want to create, they can click Create.
+          // Standard UX: If no items, Enter -> Create.
+          if (filteredItems.length === 0 && filter.trim()) {
+              handleCreate();
+          }
+      }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -97,19 +120,28 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="p-4 border-b border-slate-800 bg-slate-900/50">
-          <div className="relative">
+        {/* Search Bar with Create Button */}
+        <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex gap-2">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input
               type="text"
               placeholder={t.searchPlaceholder}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="w-full bg-slate-800 text-slate-200 pl-9 pr-4 py-2.5 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 text-sm"
+              onKeyDown={handleKeyDown}
+              className="w-full bg-slate-800 text-slate-200 pl-9 pr-4 py-2.5 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 text-sm placeholder-slate-500"
               autoFocus
             />
           </div>
+          <button
+            onClick={handleCreate}
+            disabled={!filter.trim()}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg text-sm font-medium transition-colors border border-transparent disabled:border-slate-700"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{t.create}</span>
+          </button>
         </div>
 
         {/* List */}
@@ -120,9 +152,30 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
               <p className="text-sm">{t.loading}</p>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-500">
-              <Database className="w-12 h-12 opacity-20" />
-              <p>{t.empty}</p>
+            <div className="flex flex-col items-center justify-center h-64 gap-4 text-slate-500 p-6 text-center">
+              {filter.trim() ? (
+                <>
+                    <div className="p-4 bg-indigo-500/10 rounded-full">
+                         <Search className="w-8 h-8 text-indigo-400" />
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-slate-300 font-medium">{t.createPrompt}</p>
+                        <p className="text-xs text-slate-500">"{filter}"</p>
+                    </div>
+                    <button 
+                        onClick={handleCreate}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-all shadow-lg hover:shadow-indigo-500/20"
+                    >
+                        <Plus className="w-4 h-4" />
+                        {t.createNew}
+                    </button>
+                </>
+              ) : (
+                <>
+                    <Database className="w-12 h-12 opacity-20" />
+                    <p>{t.empty}</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="grid gap-2">
