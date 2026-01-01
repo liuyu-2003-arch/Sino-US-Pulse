@@ -119,6 +119,12 @@ const App: React.FC = () => {
   };
 
   const loadData = async (query: string, forceRefresh: boolean = false) => {
+    // If we are switching to a new query (creating new comparison), clear the data 
+    // to show the full-page skeleton loader instead of the refresh spinner.
+    if (query !== currentQuery) {
+        setData(null);
+    }
+
     setLoading(true);
     setError(null);
     setSyncState('idle');
@@ -153,9 +159,15 @@ const App: React.FC = () => {
   };
 
   const loadSavedItem = async (key: string) => {
+      // If clicking the currently active item, do nothing
+      if (key === activeItemKey && data) return;
+
       setIsArchiveOpen(false);
       setIsSidebarOpen(false);
       setActiveItemKey(key);
+      
+      // Explicitly clear data to force the skeleton loader for context switches
+      setData(null);
       setLoading(true);
       setError(null);
       setSyncState('idle'); 
