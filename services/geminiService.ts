@@ -99,8 +99,13 @@ export const deleteComparison = async (key: string) => {
         const client = await getS3Client();
 
         // 1. Delete the actual JSON file
-        const delCmd = new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key });
-        await client.send(delCmd);
+        // We wrap this in a try-catch to allow "Soft Delete" if R2 CORS blocks DELETE requests.
+        try {
+            const delCmd = new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key });
+            await client.send(delCmd);
+        } catch (e) {
+            console.warn("Physical deletion failed (likely CORS), proceeding to update index.", e);
+        }
 
         // 2. Remove from index
         let index: LibraryIndex = { items: [] };
