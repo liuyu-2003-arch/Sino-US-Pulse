@@ -1,18 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { fetchComparisonData, fetchSavedComparisonByKey, listSavedComparisons } from './services/geminiService';
-import { ComparisonResponse, PRESET_QUERIES, ComparisonCategory, Language, SavedComparison } from './types';
+import { ComparisonResponse, PRESET_QUERIES, Language, SavedComparison } from './types';
 import ChartSection from './components/ChartSection';
 import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
-import { 
-    Globe, 
-    Menu, 
-    X, 
-    Database,
-    History,
-    BarChart3,
-    Loader2
-} from 'lucide-react';
+import { Globe, Menu, X, Database, History, BarChart3, Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>(() => {
@@ -44,19 +37,13 @@ const App: React.FC = () => {
     cloudLibrary: language === 'zh' ? '搜索云端 / 创建新对比' : 'Search Cloud / Create New'
   };
 
-  const changeLanguage = (newLang: Language) => {
-    if (language === newLang) return;
-    setLanguage(newLang);
-    localStorage.setItem('sino_pulse_language', newLang);
-  };
-
   const loadLibraryList = async () => {
     setIsLibraryLoading(true);
     try {
       const items = await listSavedComparisons(language);
       setLibraryItems(items);
     } catch (err) {
-      console.error("Failed to load library list", err);
+      console.error(err);
     } finally {
       setIsLibraryLoading(false);
     }
@@ -119,7 +106,8 @@ const App: React.FC = () => {
       try {
           const data = await fetchSavedComparisonByKey(key);
           setData(data);
-          setCurrentQuery(''); 
+          // Set current query to the English title so refresh knows what to re-generate
+          setCurrentQuery(data.titleEn || data.title); 
       } catch (err: any) {
           setError("Failed to load saved item.");
       } finally {
@@ -130,11 +118,15 @@ const App: React.FC = () => {
   const handleCreateFromArchive = (query: string) => {
       setIsArchiveOpen(false); 
       setIsSidebarOpen(false); 
-      loadData(query);         
+      loadData(query, true);         
   };
 
   const handleRefresh = () => {
-      if (currentQuery) loadData(currentQuery, true);
+      if (currentQuery) {
+          loadData(currentQuery, true);
+      } else if (data) {
+          loadData(data.titleEn || data.title, true);
+      }
   };
 
   const renderSkeleton = () => (
@@ -165,8 +157,8 @@ const App: React.FC = () => {
             </div>
         </div>
         <div className="px-6 py-4 border-b border-slate-800 flex gap-2">
-            <button onClick={() => changeLanguage('zh')} className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${language === 'zh' ? 'bg-indigo-600 text-white' : 'text-slate-400 bg-slate-800'}`}>中文</button>
-            <button onClick={() => changeLanguage('en')} className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${language === 'en' ? 'bg-indigo-600 text-white' : 'text-slate-400 bg-slate-800'}`}>English</button>
+            <button onClick={() => { setLanguage('zh'); localStorage.setItem('sino_pulse_language', 'zh'); }} className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${language === 'zh' ? 'bg-indigo-600 text-white' : 'text-slate-400 bg-slate-800'}`}>中文</button>
+            <button onClick={() => { setLanguage('en'); localStorage.setItem('sino_pulse_language', 'en'); }} className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${language === 'en' ? 'bg-indigo-600 text-white' : 'text-slate-400 bg-slate-800'}`}>English</button>
         </div>
         <div className="p-4">
             <button onClick={() => setIsArchiveOpen(true)} className="w-full flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-semibold transition-all text-left text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 shadow-lg"><Database className="w-5 h-5 text-emerald-400" /> <span className="truncate flex-1">{t.cloudLibrary}</span></button>

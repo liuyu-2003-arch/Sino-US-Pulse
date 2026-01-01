@@ -4,17 +4,13 @@ import { ComparisonResponse, Language, SavedComparison } from "../types";
 // Use Type-Only import to avoid runtime dependency at top-level
 import type { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 
-// Fix: Use correct initialization as per guidelines
-// Initialize the Gemini API client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Constants
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
 const PUBLIC_URL_BASE = `https://${process.env.R2_PUBLIC_URL}`;
 const DATA_FOLDER = "sino-pulse/v1"; 
 const LIBRARY_INDEX_KEY = "sino-pulse/v1/library_index.json";
 
-// Helper to dynamically load AWS SDK only when needed
 const getS3Client = async () => {
     const { S3Client } = await import("@aws-sdk/client-s3");
     return new S3Client({
@@ -31,7 +27,6 @@ const uploadToR2 = async (key: string, data: any) => {
   try {
     const { PutObjectCommand } = await import("@aws-sdk/client-s3");
     const client = await getS3Client();
-
     const command = new PutObjectCommand({
         Bucket: BUCKET_NAME,
         Key: key,
@@ -39,16 +34,13 @@ const uploadToR2 = async (key: string, data: any) => {
         ContentType: "application/json",
         CacheControl: "public, max-age=86400" 
     });
-
     await client.send(command);
-    console.log(`[R2] Upload successful: ${key}`);
   } catch (error) {
-    console.warn("[R2] Failed to initialize SDK or Upload.", error);
-    throw error; // Rethrow to allow UI to show sync error state
+    console.warn("[R2] Upload Failed.", error);
+    throw error;
   }
 };
 
-// --- Library Index Management ---
 interface LibraryIndexItem {
     key: string;
     titleZh: string;
@@ -63,11 +55,8 @@ interface LibraryIndex {
 
 const fetchLibraryIndex = async (): Promise<LibraryIndex> => {
     try {
-        // Try fetching via public URL for speed
         const response = await fetch(`${PUBLIC_URL_BASE}/${LIBRARY_INDEX_KEY}?t=${Date.now()}`);
-        if (response.ok) {
-            return await response.json();
-        }
+        if (response.ok) return await response.json();
         return { items: [] };
     } catch (e) {
         return { items: [] };
@@ -78,8 +67,6 @@ const updateLibraryIndex = async (newItem: LibraryIndexItem) => {
     try {
         const { PutObjectCommand, GetObjectCommand } = await import("@aws-sdk/client-s3");
         const client = await getS3Client();
-
-        // 1. Fetch existing index (S3 consistent read preferred over public URL for updates)
         let index: LibraryIndex = { items: [] };
         try {
             const getCmd = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: LIBRARY_INDEX_KEY });
@@ -89,17 +76,10 @@ const updateLibraryIndex = async (newItem: LibraryIndexItem) => {
                 index = JSON.parse(str);
             }
         } catch (e: any) {
-             // NoSuchKey is expected if index doesn't exist yet
-             if (e.name !== 'NoSuchKey') {
-                 console.warn("Failed to fetch index for update", e);
-             }
+             if (e.name !== 'NoSuchKey') console.warn("Index fetch failed", e);
         }
-
-        // 2. Update Index (Remove duplicate keys or titles to ensure freshness)
         index.items = index.items.filter(i => i.key !== newItem.key && i.titleEn !== newItem.titleEn);
         index.items.push(newItem);
-
-        // 3. Save
         const putCmd = new PutObjectCommand({
             Bucket: BUCKET_NAME,
             Key: LIBRARY_INDEX_KEY,
@@ -107,16 +87,11 @@ const updateLibraryIndex = async (newItem: LibraryIndexItem) => {
             ContentType: "application/json",
             CacheControl: "no-cache"
         });
-
         await client.send(putCmd);
-        console.log(`[R2] Index updated for ${newItem.titleEn}`);
-
     } catch (e) {
-        console.error("[R2] Failed to update library index", e);
+        console.error("[R2] Index update failed", e);
     }
 };
-
-// --- Main Service Functions ---
 
 export const listSavedComparisons = async (language: Language): Promise<SavedComparison[]> => {
     const index = await fetchLibraryIndex();
@@ -131,14 +106,12 @@ export const listSavedComparisons = async (language: Language): Promise<SavedCom
 };
 
 export const fetchSavedComparisonByKey = async (key: string): Promise<ComparisonResponse> => {
-    // Try public URL first
     try {
         const response = await fetch(`${PUBLIC_URL_BASE}/${key}?t=${Date.now()}`);
-        if (!response.ok) throw new Error("Failed to fetch from public URL");
+        if (!response.ok) throw new Error("Public fetch failed");
         const data = await response.json();
         return { ...data, source: 'r2' };
     } catch (e) {
-        // Fallback to S3 direct fetch (in case public access is restricted or delayed)
         try {
             const { GetObjectCommand } = await import("@aws-sdk/client-s3");
             const client = await getS3Client();
@@ -149,24 +122,22 @@ export const fetchSavedComparisonByKey = async (key: string): Promise<Comparison
             const data = JSON.parse(str);
             return { ...data, source: 'r2' };
         } catch (s3Error) {
-            console.error("Failed to fetch saved comparison", s3Error);
             throw s3Error;
         }
     }
 };
 
-// Fix: Define responseSchema as a plain object and update to use gemini-3-pro-preview for complex reasoning tasks
 const responseSchema = {
     type: Type.OBJECT,
     properties: {
-        title: { type: Type.STRING, description: "Main title of the comparison." },
-        titleEn: { type: Type.STRING, description: "English title." },
-        titleZh: { type: Type.STRING, description: "Chinese title." },
-        category: { type: Type.STRING, description: "Category of the comparison (Economy, Technology, etc)." },
-        yAxisLabel: { type: Type.STRING, description: "Label for the Y-axis." },
-        summary: { type: Type.STRING, description: "Executive summary of the comparison." },
-        detailedAnalysis: { type: Type.STRING, description: "Detailed analysis of the trends." },
-        futureOutlook: { type: Type.STRING, description: "Future outlook and predictions." },
+        title: { type: Type.STRING, description: "Short title of the comparison." },
+        titleEn: { type: Type.STRING, description: "Clean English title, no meta-commentary." },
+        titleZh: { type: Type.STRING, description: "Clean Chinese title, no meta-commentary." },
+        category: { type: Type.STRING },
+        yAxisLabel: { type: Type.STRING },
+        summary: { type: Type.STRING },
+        detailedAnalysis: { type: Type.STRING },
+        futureOutlook: { type: Type.STRING },
         data: {
             type: Type.ARRAY,
             items: {
@@ -175,7 +146,8 @@ const responseSchema = {
                     year: { type: Type.STRING },
                     usa: { type: Type.NUMBER },
                     china: { type: Type.NUMBER }
-                }
+                },
+                required: ["year", "usa", "china"]
             }
         },
         sources: {
@@ -197,39 +169,31 @@ export const fetchComparisonData = async (
     language: Language, 
     forceRefresh: boolean = false
 ): Promise<{ data: ComparisonResponse; uploadPromise?: Promise<void> }> => {
-    
-    // 1. Check Cache (if not forced)
     if (!forceRefresh) {
         try {
             const index = await fetchLibraryIndex();
             const match = index.items.find(item => 
                 item.titleEn.toLowerCase() === query.toLowerCase() || 
-                item.titleZh === query ||
-                (item.titleEn.toLowerCase().includes(query.toLowerCase()) && query.length > 15) // strict-ish fuzzy match
+                item.titleZh === query
             );
-            
             if (match) {
-                console.log(`[Cache] Hit for query "${query}" -> ${match.key}`);
                 const cachedData = await fetchSavedComparisonByKey(match.key);
                 return { data: cachedData };
             }
-        } catch (e) {
-            console.warn("[Cache] Lookup failed", e);
-        }
+        } catch (e) {}
     }
 
-    // 2. Generate Content via Gemini
     const langName = language === 'zh' ? 'Chinese (Simplified)' : 'English';
     const prompt = `
-        Compare the United States (USA) and China for the following topic: "${query}".
-        Provide historical data (yearly), a comprehensive summary, detailed trend analysis, and future outlook.
-        Data should be as accurate as possible.
-        Language of response: ${langName}.
-        Ensure 'titleEn' and 'titleZh' are accurately translated.
-        For the data array, ensure you cover a significant historical range if applicable (e.g. 1980-2024).
+        Compare the United States (USA) and China for: "${query}".
+        Provide historical yearly data (e.g. 1980 to 2023), analysis, and outlook.
+        STRICT RULES:
+        1. Titles MUST be concise and factual (e.g. "USA vs China GDP per Capita"). 
+        2. DO NOT include any instructions, meta-commentary, or technical notes in the title fields.
+        3. Response language: ${langName}.
+        4. Data values MUST be numbers, not strings.
     `;
 
-    // Fix: Use gemini-3-pro-preview for complex reasoning tasks
     const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: prompt,
@@ -240,29 +204,16 @@ export const fetchComparisonData = async (
     });
 
     const text = response.text;
-    if (!text) throw new Error("Empty response from Gemini");
+    if (!text) throw new Error("Empty response");
 
-    let data: ComparisonResponse;
-    try {
-        data = JSON.parse(text);
-        data.source = 'api';
-    } catch (e) {
-        console.error("Failed to parse Gemini response", text);
-        throw new Error("Invalid JSON response from AI");
-    }
+    const data: ComparisonResponse = JSON.parse(text);
+    data.source = 'api';
 
-    // 3. Prepare Upload (Background Sync)
-    // We return the data immediately, but pass a promise that resolves when R2 upload completes.
     const uploadPromise = (async () => {
         try {
             const safeTitle = (data.titleEn || data.title || 'untitled').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-            const filename = `${safeTitle}_${Date.now()}.json`; // Timestamp to avoid collisions? Or just title? Title is cleaner for URLs.
-            // Let's use title but clean it.
-            const cleanFilename = `${safeTitle}.json`;
-            const key = `${DATA_FOLDER}/${cleanFilename}`;
-
+            const key = `${DATA_FOLDER}/${safeTitle}.json`;
             await uploadToR2(key, data);
-            
             await updateLibraryIndex({
                 key,
                 titleEn: data.titleEn || data.title,
@@ -271,8 +222,7 @@ export const fetchComparisonData = async (
                 lastModified: new Date().toISOString()
             });
         } catch (e) {
-            console.error("Background sync failed", e);
-            throw e;
+            console.error("Sync failed", e);
         }
     })();
 
