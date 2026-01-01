@@ -11,7 +11,7 @@ import {
   Area
 } from 'recharts';
 import { ComparisonResponse } from '../types';
-import { RefreshCw, Database, Trash2, Star } from 'lucide-react';
+import { RefreshCw, Database, Trash2, Star, Pencil } from 'lucide-react';
 
 interface ChartSectionProps {
   data: ComparisonResponse;
@@ -20,6 +20,7 @@ interface ChartSectionProps {
   syncState: 'idle' | 'syncing' | 'success' | 'error';
   isAdmin: boolean;
   onDelete: () => void;
+  onEdit: () => void;
   isFavorite: boolean;
   onToggleFavorite: () => void;
   isLoggedIn: boolean;
@@ -56,7 +57,7 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
 
 const ChartSection: React.FC<ChartSectionProps> = ({ 
     data, onRefresh, isLoading, syncState, 
-    isAdmin, onDelete, isFavorite, onToggleFavorite, isLoggedIn, onLoginRequest
+    isAdmin, onDelete, onEdit, isFavorite, onToggleFavorite, isLoggedIn, onLoginRequest
 }) => {
   const t = {
     unit: '单位',
@@ -171,8 +172,16 @@ const ChartSection: React.FC<ChartSectionProps> = ({
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
 
-          {/* Delete Button (Admin Only) */}
+          {/* Edit/Delete Buttons (Admin Only) */}
           {isAdmin && (
+            <>
+             <button
+                onClick={onEdit}
+                className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors ml-1"
+                title="编辑内容 (管理员)"
+             >
+                <Pencil className="w-4 h-4" />
+             </button>
              <button
                 onClick={onDelete}
                 className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ml-1"
@@ -180,6 +189,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({
              >
                 <Trash2 className="w-4 h-4" />
              </button>
+            </>
           )}
         </div>
       </div>

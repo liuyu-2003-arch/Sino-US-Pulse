@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { fetchComparisonData, fetchSavedComparisonByKey, listSavedComparisons, deleteComparison } from './services/geminiService';
+import { fetchComparisonData, fetchSavedComparisonByKey, listSavedComparisons, deleteComparison, saveEditedComparison } from './services/geminiService';
 import { supabase, isUserAdmin, signOut, getFavorites, addFavorite, removeFavorite } from './services/supabase';
 import { ComparisonResponse, PRESET_QUERIES, SavedComparison } from './types';
 import ChartSection from './components/ChartSection';
 import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
 import LoginModal from './components/LoginModal';
+import EditModal from './components/EditModal';
 import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -36,6 +37,9 @@ const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const isAdmin = isUserAdmin(user);
+
+  // Edit State
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const t = {
     title: '中美脉搏',
@@ -234,6 +238,17 @@ const App: React.FC = () => {
       }
   };
 
+  const handleEditSave = async (updatedData: ComparisonResponse) => {
+      if (!activeItemKey) return;
+      try {
+          await saveEditedComparison(activeItemKey, updatedData);
+          setData(updatedData); // Update local view
+          await loadLibraryAndFavorites(); // Refresh titles in sidebar
+      } catch (e) {
+          throw e; // Modal handles error display
+      }
+  };
+
   // Derive display list for sidebar
   const favoriteItems = allLibraryItems.filter(item => favoriteKeys.includes(item.key));
   const displayedFavorites = showAllFavorites ? favoriteItems : favoriteItems.slice(0, 4);
@@ -273,6 +288,15 @@ const App: React.FC = () => {
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
       />
+
+      {data && (
+          <EditModal 
+            isOpen={isEditOpen}
+            onClose={() => setIsEditOpen(false)}
+            data={data}
+            onSave={handleEditSave}
+          />
+      )}
 
       {isSidebarOpen && <div className="fixed inset-0 bg-black/60 z-20 lg:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />}
       
@@ -417,6 +441,7 @@ const App: React.FC = () => {
                 syncState={syncState} 
                 isAdmin={isAdmin}
                 onDelete={handleDelete}
+                onEdit={() => setIsEditOpen(true)}
                 isFavorite={user && activeItemKey ? favoriteKeys.includes(activeItemKey) : false}
                 onToggleFavorite={handleToggleFavorite}
                 isLoggedIn={!!user}

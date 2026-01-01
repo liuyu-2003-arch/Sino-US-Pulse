@@ -78,8 +78,12 @@ const updateLibraryIndex = async (newItem: LibraryIndexItem) => {
         } catch (e: any) {
              if (e.name !== 'NoSuchKey') console.warn("Index fetch failed", e);
         }
-        index.items = index.items.filter(i => i.key !== newItem.key && i.titleEn !== newItem.titleEn);
+        
+        // Remove existing entry for this key (update logic)
+        index.items = index.items.filter(i => i.key !== newItem.key);
+        // Add updated item
         index.items.push(newItem);
+        
         const putCmd = new PutObjectCommand({
             Bucket: BUCKET_NAME,
             Key: LIBRARY_INDEX_KEY,
@@ -170,6 +174,28 @@ export const fetchSavedComparisonByKey = async (key: string): Promise<Comparison
         } catch (s3Error) {
             throw s3Error;
         }
+    }
+};
+
+export const saveEditedComparison = async (key: string, data: ComparisonResponse) => {
+    try {
+        // Ensure source is marked as r2 since it is now saved
+        const payload = { ...data, source: 'r2' };
+        
+        // 1. Upload to R2
+        await uploadToR2(key, payload);
+
+        // 2. Update Index
+        await updateLibraryIndex({
+            key,
+            titleEn: data.titleEn || data.title,
+            titleZh: data.titleZh || data.title,
+            category: data.category || 'Custom',
+            lastModified: new Date().toISOString()
+        });
+    } catch (e) {
+        console.error("Save edit failed", e);
+        throw e;
     }
 };
 
