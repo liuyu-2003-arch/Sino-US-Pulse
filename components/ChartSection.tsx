@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import {
   ComposedChart,
@@ -9,11 +8,10 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Area,
-  TooltipProps
+  Area
 } from 'recharts';
 import { ComparisonResponse, Language } from '../types';
-import { RefreshCw, Database, CloudLightning, FileJson, FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { RefreshCw, Database, CloudLightning } from 'lucide-react';
 
 interface ChartSectionProps {
   data: ComparisonResponse;
@@ -29,80 +27,64 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
     return (
       <div className="bg-slate-800 border border-slate-700 p-4 rounded-lg shadow-xl text-sm z-50">
         <p className="font-bold text-slate-200 mb-2">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2 mb-1">
-            <div 
-              className="w-3 h-3 rounded-full" 
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-slate-400 capitalize">{entry.name}:</span>
-            <span className="font-mono text-slate-100 font-medium">
-              {entry.value?.toLocaleString()}
-              {entry.dataKey === 'ratio' ? 'x' : ''}
-            </span>
-          </div>
-        ))}
+        <div className="space-y-1.5">
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-2.5 h-2.5 rounded-full" 
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-slate-400">{entry.name}:</span>
+              </div>
+              <span className="font-mono text-slate-100 font-medium">
+                {entry.dataKey === 'ratio' 
+                  ? `${entry.value.toLocaleString()}x` 
+                  : entry.value.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
   return null;
 };
 
-// Fix: Complete truncated component and add default export
 const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading, language, syncState }) => {
-  // Static translations
   const t = {
     unit: language === 'zh' ? '单位' : 'Unit',
     updateData: language === 'zh' ? '更新数据' : 'Update Data',
-    updating: language === 'zh' ? '更新中...' : 'Updating...',
     usa: language === 'zh' ? '美国' : 'United States',
     china: language === 'zh' ? '中国' : 'China',
-    ratio: language === 'zh' ? '美/中 倍数' : 'USA/China Ratio',
-    savedLocally: language === 'zh' ? '本地已保存' : 'Saved locally',
-    exportData: language === 'zh' ? '导出数据' : 'Export Data',
-    sourceR2: language === 'zh' ? '数据源：Cloudflare R2 (云端)' : 'Source: Cloudflare R2 (Cloud)',
-    sourceNew: language === 'zh' ? '数据源：实时生成' : 'Source: Generated',
-    syncing: language === 'zh' ? '正在同步云端...' : 'Syncing to Cloud...',
-    synced: language === 'zh' ? '已同步至云端' : 'Cloud Synced',
-    syncFailed: language === 'zh' ? '同步失败 (仅本地)' : 'Sync Failed (Local)',
+    ratio: language === 'zh' ? '倍数 (美/中)' : 'Multiplier (US/CN)',
+    sourceR2: language === 'zh' ? '存档' : 'Archive',
+    sourceNew: language === 'zh' ? '实时' : 'Real-time',
+    syncing: language === 'zh' ? '同步中' : 'Syncing',
+    synced: language === 'zh' ? '已同步' : 'Synced',
   };
 
-  // Process data to add Ratio
   const chartData = useMemo(() => {
     return data.data.map(item => ({
         ...item,
-        // Calculate USA / China ratio. Handle division by zero.
         ratio: item.china && item.china !== 0 ? parseFloat((item.usa / item.china).toFixed(2)) : 0
     }));
   }, [data.data]);
 
-  // Calculate specific ticks for the X Axis (every 5 years) to ensure uniform spacing
   const xAxisTicks = useMemo(() => {
-    if (!chartData || chartData.length === 0) return [];
-    
-    // Sort just in case, though API usually returns sorted
-    const sortedData = [...chartData].sort((a, b) => parseInt(a.year) - parseInt(b.year));
-    
-    // Show strictly every 5 years (1950, 1955, etc) to keep visual spacing uniform.
-    const ticks = sortedData
+    if (!chartData.length) return [];
+    const sorted = [...chartData].sort((a, b) => parseInt(a.year) - parseInt(b.year));
+    const ticks = sorted
       .map(d => d.year)
-      .filter(yearStr => {
-        const year = parseInt(yearStr);
-        return !isNaN(year) && year % 5 === 0;
-      });
-    
-    // Always include the first and last year if not already there
-    if (sortedData.length > 0) {
-        if (!ticks.includes(sortedData[0].year)) ticks.unshift(sortedData[0].year);
-        if (!ticks.includes(sortedData[sortedData.length - 1].year)) ticks.push(sortedData[sortedData.length - 1].year);
-    }
-    
+      .filter(y => parseInt(y) % 5 === 0);
+    if (!ticks.includes(sorted[0].year)) ticks.unshift(sorted[0].year);
+    if (!ticks.includes(sorted[sorted.length - 1].year)) ticks.push(sorted[sorted.length - 1].year);
     return [...new Set(ticks)].sort((a, b) => parseInt(a) - parseInt(b));
   }, [chartData]);
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-start mb-4">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight">
             {language === 'zh' ? data.titleZh : data.titleEn}
@@ -113,36 +95,26 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
         </div>
         <div className="flex items-center gap-2">
           {data.source === 'r2' ? (
-             <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded text-[10px] font-medium border border-emerald-500/20">
+             <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded text-[10px] font-bold border border-emerald-500/20">
                 <Database className="w-3 h-3" />
                 {t.sourceR2}
              </div>
           ) : (
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded text-[10px] font-medium border border-indigo-500/20">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded text-[10px] font-bold border border-indigo-500/20">
                 <CloudLightning className="w-3 h-3" />
                 {t.sourceNew}
             </div>
           )}
-
           {syncState === 'syncing' && (
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 text-amber-400 rounded text-[10px] font-medium animate-pulse border border-amber-500/20">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 text-amber-400 rounded text-[10px] font-bold animate-pulse">
               <RefreshCw className="w-3 h-3 animate-spin" />
               {t.syncing}
             </div>
           )}
-
-          {syncState === 'success' && (
-             <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded text-[10px] font-medium border border-emerald-500/20">
-                <CloudLightning className="w-3 h-3" />
-                {t.synced}
-             </div>
-          )}
-
           <button
             onClick={onRefresh}
             disabled={isLoading}
-            className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 transition-colors disabled:opacity-50"
-            title={t.updateData}
+            className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -151,10 +123,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
 
       <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={chartData}
-            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-          >
+          <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorUsa" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
@@ -168,38 +137,63 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
             <XAxis 
               dataKey="year" 
-              stroke="#94a3b8" 
-              fontSize={12} 
+              stroke="#64748b" 
+              fontSize={10} 
               tickLine={false} 
               axisLine={false}
               ticks={xAxisTicks}
+              dy={10}
             />
             <YAxis 
-              stroke="#94a3b8" 
-              fontSize={12} 
+              yAxisId="left"
+              stroke="#64748b" 
+              fontSize={10} 
               tickLine={false} 
               axisLine={false}
-              tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(1)}k` : value}
+              tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(1)}M` : val >= 1000 ? `${(val/1000).toFixed(1)}k` : val}
+            />
+            <YAxis 
+              yAxisId="right"
+              orientation="right"
+              stroke="#10b981" 
+              fontSize={10} 
+              tickLine={false} 
+              axisLine={false}
+              tickFormatter={(val) => `${val}x`}
+              domain={[0, 'auto']}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend verticalAlign="top" height={36}/>
+            <Legend verticalAlign="top" align="right" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '0px' }} />
             <Area
+              yAxisId="left"
               type="monotone"
               dataKey="usa"
               name={t.usa}
               stroke="#6366f1"
-              strokeWidth={3}
+              strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorUsa)"
             />
             <Area
+              yAxisId="left"
               type="monotone"
               dataKey="china"
               name={t.china}
               stroke="#ef4444"
-              strokeWidth={3}
+              strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorChina)"
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="ratio"
+              name={t.ratio}
+              stroke="#10b981"
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={false}
+              activeDot={{ r: 4 }}
             />
           </ComposedChart>
         </ResponsiveContainer>

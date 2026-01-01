@@ -10,47 +10,30 @@ import {
     X, 
     Database,
     History,
-    TrendingUp,
-    DollarSign,
-    Zap,
-    Users,
-    Shield,
-    Leaf,
     BarChart3,
     Loader2,
-    PlusCircle,
-    Search
+    Download
 } from 'lucide-react';
 
 const App: React.FC = () => {
-  // Language State with persistence
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('sino_pulse_language');
-    return (saved === 'en' || saved === 'zh') ? saved : 'zh'; // Default to Chinese
+    return (saved === 'en' || saved === 'zh') ? saved : 'zh';
   });
 
   const [data, setData] = useState<ComparisonResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [customQuery, setCustomQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeItemKey, setActiveItemKey] = useState<string>('');
   const [currentQuery, setCurrentQuery] = useState<string>('');
-  
-  // Library state
   const [libraryItems, setLibraryItems] = useState<SavedComparison[]>([]);
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
-
-  // Synchronization Status
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
-
-  // Archive Modal State
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
 
-  // Translations dictionary
   const t = {
     title: language === 'zh' ? '中美脉搏' : 'SinoUS Pulse',
-    searchPlaceholder: language === 'zh' ? '输入任何对比话题...' : 'Compare anything...',
     libraryTitle: language === 'zh' ? '历史对比' : 'Saved Archive',
     noItems: language === 'zh' ? '暂无记录' : 'No records yet',
     poweredBy: language === 'zh' ? '由 Gemini 3 Pro 驱动' : 'Powered by Gemini 3 Pro',
@@ -59,7 +42,8 @@ const App: React.FC = () => {
     errorTitle: language === 'zh' ? '错误' : 'Error',
     retry: language === 'zh' ? '重试' : 'Retry',
     errorGeneric: language === 'zh' ? '生成数据失败。' : 'Failed to generate data.',
-    cloudLibrary: language === 'zh' ? '搜索云端 / 创建新话题' : 'Search Cloud / Create New'
+    cloudLibrary: language === 'zh' ? '搜索云端 / 创建新对比' : 'Search Cloud / Create New',
+    download: language === 'zh' ? '导出离线网页' : 'Export Offline Report'
   };
 
   const changeLanguage = (newLang: Language) => {
@@ -68,7 +52,6 @@ const App: React.FC = () => {
     localStorage.setItem('sino_pulse_language', newLang);
   };
 
-  // Load the sidebar library list
   const loadLibraryList = async () => {
     setIsLibraryLoading(true);
     try {
@@ -81,7 +64,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Initial loads
   useEffect(() => {
     loadLibraryList();
     if (currentQuery) {
@@ -89,7 +71,6 @@ const App: React.FC = () => {
     } else {
         loadInitialData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 
   const loadInitialData = async () => {
@@ -116,26 +97,15 @@ const App: React.FC = () => {
     try {
       const { data, uploadPromise } = await fetchComparisonData(query, language, forceRefresh);
       setData(data);
-
       if (data.source === 'api' && uploadPromise) {
           setSyncState('syncing');
-          uploadPromise
-            .then(() => {
-                setSyncState('success');
-                loadLibraryList();
-            })
-            .catch((e) => {
-                console.error("Sync failed", e);
-                setSyncState('error');
-            });
-      } else {
-          setSyncState('idle');
+          uploadPromise.then(() => {
+              setSyncState('success');
+              loadLibraryList();
+          }).catch(() => setSyncState('error'));
       }
-
     } catch (err: any) {
-      const code = err.status || err.code || err.cause?.code || 'UNKNOWN';
-      const errorMessage = err.message || '';
-      setError(`${t.errorGeneric} [${code}] ${errorMessage}`);
+      setError(`${t.errorGeneric} [${err.status || 'ERR'}]`);
     } finally {
       setLoading(false);
     }
@@ -148,7 +118,6 @@ const App: React.FC = () => {
       setLoading(true);
       setError(null);
       setSyncState('idle'); 
-      
       try {
           const data = await fetchSavedComparisonByKey(key);
           setData(data);
@@ -167,32 +136,40 @@ const App: React.FC = () => {
   };
 
   const handleRefresh = () => {
-      if (currentQuery) {
-          loadData(currentQuery, true);
-      }
+      if (currentQuery) loadData(currentQuery, true);
   };
 
-  const handleCustomSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customQuery.trim()) return;
-    loadData(customQuery);
+  const handleDownload = () => {
+    if (!data) return;
+    const analysisElement = document.getElementById('analysis-content');
+    const analysisHtml = analysisElement ? analysisElement.innerHTML : '';
+    const labels = data.data.map(d => d.year);
+    const usaData = data.data.map(d => d.usa);
+    const chinaData = data.data.map(d => d.china);
+    const ratioData = data.data.map(d => d.china ? (d.usa / d.china).toFixed(2) : 0);
+
+    const html = `<!DOCTYPE html><html lang="${language}"><head><meta charset="UTF-8"><title>${data.titleEn}</title>
+    <script src="https://cdn.tailwindcss.com"></script><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>body{background:#0f172a;color:#f1f5f9;font-family:sans-serif;padding:40px} .card{background:#1e293b;border-radius:1rem;padding:2rem;margin-bottom:2rem;border:1px solid #334155}</style>
+    </head><body><div class="max-w-5xl mx-auto"><div class="card"><h1 class="text-3xl font-bold mb-2">${language === 'zh' ? data.titleZh : data.titleEn}</h1><p class="text-slate-400 mb-8">${data.yAxisLabel}</p>
+    <div style="height:400px"><canvas id="c"></canvas></div></div><div class="card">${analysisHtml}</div></div>
+    <script>const ctx=document.getElementById('c').getContext('2d');new Chart(ctx,{type:'line',data:{labels:${JSON.stringify(labels)},
+    datasets:[{label:'USA',data:${JSON.stringify(usaData)},borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',fill:true,yAxisID:'y'},
+    {label:'China',data:${JSON.stringify(chinaData)},borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.1)',fill:true,yAxisID:'y'},
+    {label:'Ratio (Multiplier)',data:${JSON.stringify(ratioData)},borderColor:'#10b981',borderDash:[5,5],yAxisID:'y1'}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{type:'linear',position:'left'},y1:{type:'linear',position:'right',grid:{drawOnChartArea:false}}}}});</script></body></html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${data.titleEn.toLowerCase().replace(/\s+/g, '-')}.html`;
+    a.click();
   };
 
   const renderSkeleton = () => (
     <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden flex flex-col">
-            <div className="flex justify-between items-start mb-6">
-                <div className="h-8 bg-slate-700 rounded w-1/3"></div>
-                <div className="flex gap-2">
-                   <div className="h-8 w-20 bg-slate-700 rounded"></div>
-                   <div className="h-8 w-24 bg-slate-700 rounded"></div>
-                </div>
-            </div>
-            <div className="flex-1 flex items-end gap-2 px-2 pb-8 border-l border-b border-slate-700/50 relative">
-                {[...Array(20)].map((_, i) => (
-                   <div key={i} className="flex-1 bg-slate-700/30 rounded-t-sm" style={{ height: `${20 + Math.abs(Math.sin(i)) * 60}%`, opacity: 0.5 + (i % 2) * 0.3 }} ></div>
-                ))}
-            </div>
             <div className="absolute inset-0 flex items-center justify-center z-10">
                 <div className="bg-slate-900/80 backdrop-blur px-6 py-3 rounded-xl border border-indigo-500/30 shadow-2xl flex items-center gap-3">
                    <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
@@ -203,150 +180,50 @@ const App: React.FC = () => {
                 </div>
             </div>
         </div>
-        <div className="flex flex-col gap-6">
-            {[1, 2, 3].map((i) => (
-               <div key={i} className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 h-48 flex flex-col gap-4">
-                  <div className="flex items-center gap-3 pb-4 border-b border-slate-700/50">
-                     <div className="w-10 h-10 bg-slate-700 rounded-lg"></div>
-                     <div className="h-6 w-1/4 bg-slate-700 rounded"></div>
-                  </div>
-                  <div className="space-y-3">
-                     <div className="h-3 w-full bg-slate-700/50 rounded"></div>
-                     <div className="h-3 w-5/6 bg-slate-700/50 rounded"></div>
-                  </div>
-               </div>
-            ))}
-        </div>
     </div>
   );
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-900 text-slate-100">
-      
-      <ArchiveModal 
-         isOpen={isArchiveOpen} 
-         onClose={() => setIsArchiveOpen(false)} 
-         onSelect={loadSavedItem}
-         onCreate={handleCreateFromArchive}
-         language={language}
-      />
-
-      {isSidebarOpen && (
-        <div className="fixed inset-0 bg-black/60 z-20 lg:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
-      )}
-
-      {/* Sidebar */}
+      <ArchiveModal isOpen={isArchiveOpen} onClose={() => setIsArchiveOpen(false)} onSelect={loadSavedItem} onCreate={handleCreateFromArchive} language={language} />
+      {isSidebarOpen && <div className="fixed inset-0 bg-black/60 z-20 lg:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />}
       <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-72 bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`}>
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-3 text-indigo-400">
-                <div className="p-2 bg-indigo-600 rounded-lg">
-                    <Globe className="w-6 h-6 text-white" />
-                </div>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-600 rounded-lg"><Globe className="w-6 h-6 text-white" /></div>
                 <span className="text-xl font-bold tracking-tight text-white">{t.title}</span>
             </div>
         </div>
-
         <div className="px-6 py-4 border-b border-slate-800 flex gap-2">
-            <button onClick={() => changeLanguage('zh')} className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${language === 'zh' ? 'bg-indigo-600 text-white' : 'text-slate-400 bg-slate-800 hover:bg-slate-700 hover:text-slate-200'}`}>中文</button>
-            <button onClick={() => changeLanguage('en')} className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${language === 'en' ? 'bg-indigo-600 text-white' : 'text-slate-400 bg-slate-800 hover:bg-slate-700 hover:text-slate-200'}`}>English</button>
+            <button onClick={() => changeLanguage('zh')} className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${language === 'zh' ? 'bg-indigo-600 text-white' : 'text-slate-400 bg-slate-800'}`}>中文</button>
+            <button onClick={() => changeLanguage('en')} className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${language === 'en' ? 'bg-indigo-600 text-white' : 'text-slate-400 bg-slate-800'}`}>English</button>
         </div>
-
-        {/* Sidebar Actions */}
         <div className="p-4">
-            <button 
-                onClick={() => setIsArchiveOpen(true)}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-600 group shadow-lg"
-            >
-                <Database className="w-5 h-5 text-emerald-400" />
-                <span className="truncate flex-1">{t.cloudLibrary}</span>
-            </button>
+            <button onClick={() => setIsArchiveOpen(true)} className="w-full flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-semibold transition-all text-left text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 shadow-lg"><Database className="w-5 h-5 text-emerald-400" /> <span className="truncate flex-1">{t.cloudLibrary}</span></button>
         </div>
-
-        {/* Quick Search */}
-        <div className="px-4 pb-4">
-          <form onSubmit={handleCustomSearch} className="relative">
-            <input
-              type="text"
-              value={customQuery}
-              onChange={(e) => setCustomQuery(e.target.value)}
-              placeholder={t.searchPlaceholder}
-              className="w-full bg-slate-800/50 text-xs text-slate-300 rounded-lg pl-9 pr-4 py-2 border border-slate-700/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 placeholder-slate-600"
-            />
-            <Search className="w-3.5 h-3.5 text-slate-600 absolute left-3 top-2.5" />
-          </form>
-        </div>
-
-        {/* Dynamic Sidebar Content: Saved Library Items */}
         <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
-          <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-2 px-2 flex justify-between items-center">
-            {t.libraryTitle}
-            <History className="w-3 h-3 text-slate-600" />
-          </h3>
-          
-          {isLibraryLoading && libraryItems.length === 0 ? (
-              <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-5 h-5 animate-spin text-slate-600" />
-              </div>
-          ) : libraryItems.length === 0 ? (
-              <div className="px-2 py-4 text-xs text-slate-600 italic">
-                  {t.noItems}
-              </div>
-          ) : (
-              libraryItems.map((item) => {
+          <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-2 px-2 flex justify-between items-center">{t.libraryTitle} <History className="w-3 h-3 text-slate-600" /></h3>
+          {isLibraryLoading && libraryItems.length === 0 ? <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-slate-600" /></div> : libraryItems.length === 0 ? <div className="px-2 py-4 text-xs text-slate-600 italic">{t.noItems}</div> : libraryItems.map((item) => {
                 const isActive = activeItemKey === item.key;
                 const displayTitle = (language === 'zh' ? item.titleZh : item.titleEn) || item.filename;
                 const cleanTitle = displayTitle.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
-
-                return (
-                    <button
-                        key={item.key}
-                        onClick={() => loadSavedItem(item.key)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${isActive ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-transparent'}`}
-                    >
-                        <BarChart3 className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-400' : 'text-slate-500'}`} />
-                        <span className="truncate flex-1">{cleanTitle}</span>
-                    </button>
-                );
-              })
-          )}
+                return <button key={item.key} onClick={() => loadSavedItem(item.key)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${isActive ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-600/20' : 'text-slate-400 hover:bg-slate-800'}`}><BarChart3 className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-400' : 'text-slate-500'}`} /> <span className="truncate flex-1">{cleanTitle}</span></button>;
+          })}
         </nav>
-
-        <div className="p-4 border-t border-slate-800">
-            <div className="text-[10px] text-slate-600 text-center uppercase tracking-widest">{t.poweredBy}</div>
-        </div>
+        {data && (
+          <div className="p-4 border-t border-slate-800">
+             <button onClick={handleDownload} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-400 hover:text-white border border-slate-700 rounded-lg transition-colors"><Download className="w-3.5 h-3.5" /> {t.download}</button>
+          </div>
+        )}
+        <div className="p-4 border-t border-slate-800/50"><div className="text-[10px] text-slate-600 text-center uppercase tracking-widest">{t.poweredBy}</div></div>
       </aside>
-
-      {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         <header className="lg:hidden h-16 border-b border-slate-800 flex items-center px-4 justify-between bg-slate-900/90 backdrop-blur">
-          <div className="flex items-center gap-2">
-            <Globe className="w-6 h-6 text-indigo-500" />
-            <span className="font-bold">{t.title}</span>
-          </div>
-          <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-400">
-            {isSidebarOpen ? <X /> : <Menu />}
-          </button>
+          <div className="flex items-center gap-2"><Globe className="w-6 h-6 text-indigo-500" /><span className="font-bold">{t.title}</span></div>
+          <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-400">{isSidebarOpen ? <X /> : <Menu />}</button>
         </header>
-
         <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-          {loading && !data ? (
-            renderSkeleton()
-          ) : error ? (
-            <div className="flex items-center justify-center h-full text-red-400">
-                <div className="text-center max-w-md">
-                    <p className="text-lg font-semibold mb-2">{t.errorTitle}</p>
-                    <p className="font-mono text-sm bg-red-950/50 border border-red-900/50 px-3 py-2 rounded mb-4 break-words">{error}</p>
-                    <button onClick={() => loadData(PRESET_QUERIES[0].query)} className="mt-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors text-slate-200 font-medium">{t.retry}</button>
-                </div>
-            </div>
-          ) : data ? (
-            <div className="max-w-6xl mx-auto space-y-8">
-              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden">
-                <ChartSection data={data} onRefresh={handleRefresh} isLoading={loading} language={language} syncState={syncState} />
-              </div>
-              <AnalysisPanel data={data} language={language} />
-            </div>
-          ) : null}
+          {loading && !data ? renderSkeleton() : error ? <div className="flex items-center justify-center h-full text-red-400"><div className="text-center max-w-md"><p className="text-lg font-semibold mb-2">{t.errorTitle}</p><p className="font-mono text-sm bg-red-950/50 border border-red-900/50 px-3 py-2 rounded mb-4 break-words">{error}</p><button onClick={() => loadData(PRESET_QUERIES[0].query)} className="mt-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors text-slate-200 font-medium">{t.retry}</button></div></div> : data ? <div className="max-w-6xl mx-auto space-y-8"><div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden"><ChartSection data={data} onRefresh={handleRefresh} isLoading={loading} language={language} syncState={syncState} /></div><AnalysisPanel data={data} language={language} /></div> : null}
         </div>
       </main>
     </div>
