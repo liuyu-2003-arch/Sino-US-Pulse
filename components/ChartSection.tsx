@@ -16,7 +16,6 @@ import { RefreshCw, Database, CloudLightning } from 'lucide-react';
 interface ChartSectionProps {
   data: ComparisonResponse;
   onRefresh: () => void;
-  onDownload?: () => void;
   isLoading?: boolean;
   language: Language;
   syncState: 'idle' | 'syncing' | 'success' | 'error';

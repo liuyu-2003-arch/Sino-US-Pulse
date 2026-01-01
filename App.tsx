@@ -11,8 +11,7 @@ import {
     Database,
     History,
     BarChart3,
-    Loader2,
-    Download
+    Loader2
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -42,8 +41,7 @@ const App: React.FC = () => {
     errorTitle: language === 'zh' ? '错误' : 'Error',
     retry: language === 'zh' ? '重试' : 'Retry',
     errorGeneric: language === 'zh' ? '生成数据失败。' : 'Failed to generate data.',
-    cloudLibrary: language === 'zh' ? '搜索云端 / 创建新对比' : 'Search Cloud / Create New',
-    download: language === 'zh' ? '导出离线网页' : 'Export Offline Report'
+    cloudLibrary: language === 'zh' ? '搜索云端 / 创建新对比' : 'Search Cloud / Create New'
   };
 
   const changeLanguage = (newLang: Language) => {
@@ -139,34 +137,6 @@ const App: React.FC = () => {
       if (currentQuery) loadData(currentQuery, true);
   };
 
-  const handleDownload = () => {
-    if (!data) return;
-    const analysisElement = document.getElementById('analysis-content');
-    const analysisHtml = analysisElement ? analysisElement.innerHTML : '';
-    const labels = data.data.map(d => d.year);
-    const usaData = data.data.map(d => d.usa);
-    const chinaData = data.data.map(d => d.china);
-    const ratioData = data.data.map(d => d.china ? (d.usa / d.china).toFixed(2) : 0);
-
-    const html = `<!DOCTYPE html><html lang="${language}"><head><meta charset="UTF-8"><title>${data.titleEn}</title>
-    <script src="https://cdn.tailwindcss.com"></script><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>body{background:#0f172a;color:#f1f5f9;font-family:sans-serif;padding:40px} .card{background:#1e293b;border-radius:1rem;padding:2rem;margin-bottom:2rem;border:1px solid #334155}</style>
-    </head><body><div class="max-w-5xl mx-auto"><div class="card"><h1 class="text-3xl font-bold mb-2">${language === 'zh' ? data.titleZh : data.titleEn}</h1><p class="text-slate-400 mb-8">${data.yAxisLabel}</p>
-    <div style="height:400px"><canvas id="c"></canvas></div></div><div class="card">${analysisHtml}</div></div>
-    <script>const ctx=document.getElementById('c').getContext('2d');new Chart(ctx,{type:'line',data:{labels:${JSON.stringify(labels)},
-    datasets:[{label:'USA',data:${JSON.stringify(usaData)},borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',fill:true,yAxisID:'y'},
-    {label:'China',data:${JSON.stringify(chinaData)},borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.1)',fill:true,yAxisID:'y'},
-    {label:'Ratio (Multiplier)',data:${JSON.stringify(ratioData)},borderColor:'#10b981',borderDash:[5,5],yAxisID:'y1'}]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{y:{type:'linear',position:'left'},y1:{type:'linear',position:'right',grid:{drawOnChartArea:false}}}}});</script></body></html>`;
-
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${data.titleEn.toLowerCase().replace(/\s+/g, '-')}.html`;
-    a.click();
-  };
-
   const renderSkeleton = () => (
     <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden flex flex-col">
@@ -210,11 +180,6 @@ const App: React.FC = () => {
                 return <button key={item.key} onClick={() => loadSavedItem(item.key)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${isActive ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-600/20' : 'text-slate-400 hover:bg-slate-800'}`}><BarChart3 className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-400' : 'text-slate-500'}`} /> <span className="truncate flex-1">{cleanTitle}</span></button>;
           })}
         </nav>
-        {data && (
-          <div className="p-4 border-t border-slate-800">
-             <button onClick={handleDownload} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-400 hover:text-white border border-slate-700 rounded-lg transition-colors"><Download className="w-3.5 h-3.5" /> {t.download}</button>
-          </div>
-        )}
         <div className="p-4 border-t border-slate-800/50"><div className="text-[10px] text-slate-600 text-center uppercase tracking-widest">{t.poweredBy}</div></div>
       </aside>
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
