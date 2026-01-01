@@ -43,11 +43,18 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave }) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      {/* 
+         Changed layout:
+         1. max-h-[90vh]: Limits height to viewport
+         2. flex flex-col: vertical layout
+         3. header/footer are direct children (shrink-0)
+         4. middle content is flex-1 overflow-y-auto (scrolls independently)
+      */}
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-800 sticky top-0 bg-slate-900 rounded-t-2xl z-10">
+        {/* Header - Fixed at top */}
+        <div className="flex items-center justify-between p-6 border-b border-slate-800 shrink-0 bg-slate-900 rounded-t-2xl">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-500/10 rounded-lg">
                 <Edit3 className="w-5 h-5 text-indigo-400" />
@@ -62,8 +69,8 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave }) 
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
+        {/* Content - Scrollable Area */}
+        <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-400">中文标题 (Title Zh)</label>
@@ -126,8 +133,8 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave }) 
             </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-slate-800 flex justify-end gap-3 sticky bottom-0 bg-slate-900 rounded-b-2xl">
+        {/* Footer - Fixed at bottom */}
+        <div className="p-6 border-t border-slate-800 flex justify-end gap-3 shrink-0 bg-slate-900 rounded-b-2xl">
             <button 
                 onClick={onClose}
                 disabled={isSaving}

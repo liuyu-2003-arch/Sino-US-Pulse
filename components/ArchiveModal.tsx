@@ -1,7 +1,8 @@
+
 import React, { useEffect, useState } from 'react';
 import { SavedComparison } from '../types';
 import { listSavedComparisons } from '../services/geminiService';
-import { X, Calendar, Database, Search, Loader2, Plus, Lock } from 'lucide-react';
+import { X, Calendar, Database, Search, Loader2, Plus, Lock, Star } from 'lucide-react';
 
 interface ArchiveModalProps {
   isOpen: boolean;
@@ -9,15 +10,21 @@ interface ArchiveModalProps {
   onSelect: (key: string) => void;
   onCreate: (query: string) => void;
   isAdmin: boolean;
+  mode?: 'all' | 'favorites'; // New prop to control display mode
+  favoriteKeys?: string[];    // New prop for filtering favorites
 }
 
-const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, onCreate, isAdmin }) => {
+const ArchiveModal: React.FC<ArchiveModalProps> = ({ 
+    isOpen, onClose, onSelect, onCreate, isAdmin, 
+    mode = 'all', favoriteKeys = [] 
+}) => {
   const [items, setItems] = useState<SavedComparison[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState('');
 
   const t = {
-    title: '云端资料库',
+    titleAll: '云端资料库',
+    titleFav: '我的收藏',
     searchPlaceholder: '搜索...',
     empty: '暂无匹配记录',
     loading: '正在加载列表...',
@@ -53,7 +60,12 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
     return title.trim();
   };
 
-  const filteredItems = items.filter(item => {
+  // Base list depending on mode
+  const baseItems = mode === 'favorites' 
+      ? items.filter(item => favoriteKeys.includes(item.key)) 
+      : items;
+
+  const filteredItems = baseItems.filter(item => {
     const term = filter.toLowerCase().trim();
     if (!term) return true;
     const displayTitle = getDisplayTitle(item).toLowerCase();
@@ -72,7 +84,7 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
-          if (filteredItems.length === 0 && filter.trim() && isAdmin) {
+          if (filteredItems.length === 0 && filter.trim() && isAdmin && mode === 'all') {
               handleCreate();
           }
       }
@@ -87,10 +99,14 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/10 rounded-lg">
-                <Database className="w-5 h-5 text-indigo-400" />
+            <div className={`p-2 rounded-lg ${mode === 'favorites' ? 'bg-amber-500/10' : 'bg-indigo-500/10'}`}>
+                {mode === 'favorites' ? (
+                    <Star className="w-5 h-5 text-amber-400 fill-current" />
+                ) : (
+                    <Database className="w-5 h-5 text-indigo-400" />
+                )}
             </div>
-            <h2 className="text-xl font-bold text-white">{t.title}</h2>
+            <h2 className="text-xl font-bold text-white">{mode === 'favorites' ? t.titleFav : t.titleAll}</h2>
           </div>
           <button 
             onClick={onClose}
@@ -114,7 +130,8 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
               autoFocus
             />
           </div>
-          {isAdmin && (
+          {/* Only show Create button in 'All' mode */}
+          {isAdmin && mode === 'all' && (
               <button
                 onClick={handleCreate}
                 disabled={!filter.trim()}
@@ -135,7 +152,7 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-slate-500 p-6 text-center">
-              {filter.trim() ? (
+              {filter.trim() && mode === 'all' ? (
                 <>
                     {isAdmin ? (
                         <>
@@ -165,7 +182,11 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
                 </>
               ) : (
                 <>
-                    <Database className="w-12 h-12 opacity-20" />
+                    {mode === 'favorites' ? (
+                        <Star className="w-12 h-12 opacity-20 text-amber-500" />
+                    ) : (
+                        <Database className="w-12 h-12 opacity-20" />
+                    )}
                     <p>{t.empty}</p>
                 </>
               )}
@@ -189,6 +210,9 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
                         </div>
                     )}
                   </div>
+                  {mode === 'all' && favoriteKeys.includes(item.key) && (
+                      <Star className="w-4 h-4 text-amber-500/50 fill-current" />
+                  )}
                 </div>
               ))}
             </div>

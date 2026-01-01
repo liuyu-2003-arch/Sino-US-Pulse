@@ -8,7 +8,7 @@ import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
 import LoginModal from './components/LoginModal';
 import EditModal from './components/EditModal';
-import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight } from 'lucide-react';
 
 const App: React.FC = () => {
   // Hardcoded to Chinese for this version as requested
@@ -27,19 +27,17 @@ const App: React.FC = () => {
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
   
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
-  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   
-  // Sidebar State for expansion
-  const [showAllFavorites, setShowAllFavorites] = useState(false);
-  const [showAllLatest, setShowAllLatest] = useState(false);
+  // Modal States
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [archiveMode, setArchiveMode] = useState<'all' | 'favorites'>('all');
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   
   // Auth State
   const [user, setUser] = useState<any>(null);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const isAdmin = isUserAdmin(user);
 
-  // Edit State
-  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const t = {
     title: '中美脉搏',
@@ -61,8 +59,7 @@ const App: React.FC = () => {
     permissionDenied: '权限拒绝：仅管理员可创建新对比。',
     deleteSuccess: '删除成功',
     deleteFail: '删除失败',
-    showMore: '展开更多',
-    showLess: '收起'
+    showMore: '查看全部',
   };
 
   useEffect(() => {
@@ -249,14 +246,19 @@ const App: React.FC = () => {
       }
   };
 
+  const openArchive = (mode: 'all' | 'favorites') => {
+      setArchiveMode(mode);
+      setIsArchiveOpen(true);
+  };
+
   // Derive display list for sidebar
   const favoriteItems = allLibraryItems.filter(item => favoriteKeys.includes(item.key));
-  const displayedFavorites = showAllFavorites ? favoriteItems : favoriteItems.slice(0, 4);
+  // Display only 3 items initially
+  const displayedFavorites = favoriteItems.slice(0, 3);
 
-  // Latest items (excluding just created ones if we want to get fancy, but simple list is fine)
-  // We limit to 20 to avoid sidebar clutter
+  // Latest items (limit to 20 total for data, display 3 for sidebar)
   const latestItems = allLibraryItems.slice(0, 20);
-  const displayedLatest = showAllLatest ? latestItems : latestItems.slice(0, 4);
+  const displayedLatest = latestItems.slice(0, 3);
 
   const renderSkeleton = () => (
     <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
@@ -282,6 +284,8 @@ const App: React.FC = () => {
         onSelect={loadSavedItem} 
         onCreate={handleCreateFromArchive} 
         isAdmin={isAdmin}
+        mode={archiveMode}
+        favoriteKeys={favoriteKeys}
       />
       
       <LoginModal 
@@ -309,7 +313,7 @@ const App: React.FC = () => {
         </div>
         
         <div className="p-4">
-            <button onClick={() => setIsArchiveOpen(true)} className="w-full flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-semibold transition-all text-left text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 shadow-lg"><Database className="w-5 h-5 text-emerald-400" /> <span className="truncate flex-1">{t.cloudLibrary}</span></button>
+            <button onClick={() => openArchive('all')} className="w-full flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-semibold transition-all text-left text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 shadow-lg"><Database className="w-5 h-5 text-emerald-400" /> <span className="truncate flex-1">{t.cloudLibrary}</span></button>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 py-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
@@ -337,20 +341,20 @@ const App: React.FC = () => {
                     const cleanTitle = displayTitle.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
                     return <button key={item.key} onClick={() => loadSavedItem(item.key)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${isActive ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-600/20' : 'text-slate-400 hover:bg-slate-800'}`}><BarChart3 className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-400' : 'text-slate-500'}`} /> <span className="truncate flex-1">{cleanTitle}</span></button>;
                 })}
-                {favoriteItems.length > 4 && (
+                {favoriteItems.length > 3 && (
                     <button 
-                        onClick={() => setShowAllFavorites(!showAllFavorites)}
-                        className="w-full flex items-center justify-center gap-1 mt-1 px-3 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                        onClick={() => openArchive('favorites')}
+                        className="w-full flex items-center gap-2 mt-1 px-3 py-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors group"
                     >
-                        <span>{showAllFavorites ? t.showLess : t.showMore}</span>
-                        {showAllFavorites ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        <span>{t.showMore}</span>
+                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                     </button>
                 )}
               </div>
             )}
           </div>
 
-          {/* Latest Section (New) */}
+          {/* Latest Section */}
           <div className="pt-4 border-t border-slate-800/50">
             <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-4 px-2 flex justify-between items-center">{t.latestTitle} <Clock className="w-3 h-3 text-slate-600" /></h3>
             
@@ -380,13 +384,13 @@ const App: React.FC = () => {
                             </button>
                         );
                     })}
-                    {latestItems.length > 4 && (
+                    {latestItems.length > 3 && (
                         <button 
-                            onClick={() => setShowAllLatest(!showAllLatest)}
-                            className="w-full flex items-center justify-center gap-1 mt-1 px-3 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                            onClick={() => openArchive('all')}
+                            className="w-full flex items-center gap-2 mt-1 px-3 py-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors group"
                         >
-                            <span>{showAllLatest ? t.showLess : t.showMore}</span>
-                            {showAllLatest ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            <span>{t.showMore}</span>
+                            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                         </button>
                     )}
                 </div>
