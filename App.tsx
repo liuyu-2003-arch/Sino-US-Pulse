@@ -7,7 +7,7 @@ import ChartSection from './components/ChartSection';
 import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
 import LoginModal from './components/LoginModal';
-import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock } from 'lucide-react';
+import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 
 const App: React.FC = () => {
   // Hardcoded to Chinese for this version as requested
@@ -27,6 +27,10 @@ const App: React.FC = () => {
   
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  
+  // Sidebar State for expansion
+  const [showAllFavorites, setShowAllFavorites] = useState(false);
+  const [showAllLatest, setShowAllLatest] = useState(false);
   
   // Auth State
   const [user, setUser] = useState<any>(null);
@@ -52,7 +56,9 @@ const App: React.FC = () => {
     admin: '管理员',
     permissionDenied: '权限拒绝：仅管理员可创建新对比。',
     deleteSuccess: '删除成功',
-    deleteFail: '删除失败'
+    deleteFail: '删除失败',
+    showMore: '展开更多',
+    showLess: '收起'
   };
 
   useEffect(() => {
@@ -230,9 +236,12 @@ const App: React.FC = () => {
 
   // Derive display list for sidebar
   const favoriteItems = allLibraryItems.filter(item => favoriteKeys.includes(item.key));
+  const displayedFavorites = showAllFavorites ? favoriteItems : favoriteItems.slice(0, 4);
+
   // Latest items (excluding just created ones if we want to get fancy, but simple list is fine)
   // We limit to 20 to avoid sidebar clutter
   const latestItems = allLibraryItems.slice(0, 20);
+  const displayedLatest = showAllLatest ? latestItems : latestItems.slice(0, 4);
 
   const renderSkeleton = () => (
     <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
@@ -298,12 +307,21 @@ const App: React.FC = () => {
                <div className="px-2 py-4 text-xs text-slate-600 italic text-center">{t.noItems}</div>
             ) : (
               <div className="space-y-1">
-                {favoriteItems.map((item) => {
+                {displayedFavorites.map((item) => {
                     const isActive = activeItemKey === item.key;
                     const displayTitle = item.titleZh || item.titleEn || item.filename;
                     const cleanTitle = displayTitle.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
                     return <button key={item.key} onClick={() => loadSavedItem(item.key)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${isActive ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-600/20' : 'text-slate-400 hover:bg-slate-800'}`}><BarChart3 className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-400' : 'text-slate-500'}`} /> <span className="truncate flex-1">{cleanTitle}</span></button>;
                 })}
+                {favoriteItems.length > 4 && (
+                    <button 
+                        onClick={() => setShowAllFavorites(!showAllFavorites)}
+                        className="w-full flex items-center justify-center gap-1 mt-1 px-3 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                        <span>{showAllFavorites ? t.showLess : t.showMore}</span>
+                        {showAllFavorites ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                )}
               </div>
             )}
           </div>
@@ -318,7 +336,7 @@ const App: React.FC = () => {
                  <div className="px-2 py-4 text-xs text-slate-600 italic text-center">暂无历史记录</div>
             ) : (
                 <div className="space-y-1">
-                    {latestItems.map((item) => {
+                    {displayedLatest.map((item) => {
                         const isActive = activeItemKey === item.key;
                         const isFav = favoriteKeys.includes(item.key);
                         const displayTitle = item.titleZh || item.titleEn || item.filename;
@@ -338,6 +356,15 @@ const App: React.FC = () => {
                             </button>
                         );
                     })}
+                    {latestItems.length > 4 && (
+                        <button 
+                            onClick={() => setShowAllLatest(!showAllLatest)}
+                            className="w-full flex items-center justify-center gap-1 mt-1 px-3 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                        >
+                            <span>{showAllLatest ? t.showLess : t.showMore}</span>
+                            {showAllLatest ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </button>
+                    )}
                 </div>
             )}
           </div>
