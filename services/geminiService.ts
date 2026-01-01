@@ -238,7 +238,7 @@ export const fetchComparisonData = async (
     const langName = language === 'zh' ? 'Chinese (Simplified)' : 'English';
     const prompt = `
         Compare the United States (USA) and China for: "${query}".
-        Provide historical yearly data (e.g. 1980 to 2023), analysis, and outlook.
+        Provide historical yearly data (starting from 1945 where possible up to 2024), analysis, and outlook.
         STRICT RULES:
         1. Titles MUST be concise and factual (e.g. "USA vs China GDP per Capita"). 
         2. DO NOT include any instructions, meta-commentary, or technical notes in the title fields.

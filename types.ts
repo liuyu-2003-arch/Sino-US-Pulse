@@ -1,5 +1,6 @@
 
 
+
 export type Language = 'en' | 'zh';
 
 export interface ComparisonDataPoint {
@@ -59,7 +60,7 @@ export const PRESET_QUERIES = [
     labelEn: "GDP per Capita", 
     labelZh: "人均 GDP", 
     category: ComparisonCategory.ECONOMY, 
-    query: "GDP per capita in USD from 1960 to 2024" 
+    query: "GDP per capita in USD from 1945 to 2024" 
   },
   { 
     labelEn: "Disposable Income", 
@@ -89,18 +90,18 @@ export const PRESET_QUERIES = [
     labelEn: "Internet Users", 
     labelZh: "互联网用户", 
     category: ComparisonCategory.TECHNOLOGY, 
-    query: "Number of Internet Users from 1990 to 2024" 
+    query: "Number of Internet Users from 1945 to 2024" 
   },
   { 
     labelEn: "Renewable Energy Capacity", 
     labelZh: "可再生能源装机容量", 
     category: ComparisonCategory.ENVIRONMENT, 
-    query: "Installed Renewable Energy Capacity (GW) from 1990 to 2024" 
+    query: "Installed Renewable Energy Capacity (GW) from 1945 to 2024" 
   },
   { 
     labelEn: "Patent Applications", 
     labelZh: "年度专利申请", 
     category: ComparisonCategory.TECHNOLOGY, 
-    query: "Annual Patent Applications filed from 1980 to 2023" 
+    query: "Annual Patent Applications filed from 1945 to 2023" 
   },
 ];
