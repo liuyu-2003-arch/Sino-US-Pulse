@@ -7,12 +7,11 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   Area
 } from 'recharts';
 import { ComparisonResponse } from '../types';
-import { RefreshCw, Database, CloudLightning, Trash2, Star, Loader2 } from 'lucide-react';
+import { RefreshCw, Database, Trash2, Star } from 'lucide-react';
 
 interface ChartSectionProps {
   data: ComparisonResponse;
@@ -36,7 +35,11 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
           {payload.map((entry: any, index: number) => (
             <div key={index} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                {entry.dataKey === 'ratio' ? (
+                   <div className="w-3 h-0.5 border-t-2 border-dashed" style={{ borderColor: entry.color }} />
+                ) : (
+                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                )}
                 <span className="text-slate-400">{entry.name}:</span>
               </div>
               <span className="font-mono text-slate-100 font-medium">
@@ -105,14 +108,11 @@ const ChartSection: React.FC<ChartSectionProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex justify-between items-start mb-4">
-        <div className="max-w-[60%]">
-          <h2 className="text-xl font-bold text-white tracking-tight line-clamp-2">
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex-1 min-w-0 mr-4">
+          <h2 className="text-xl font-bold text-white tracking-tight truncate">
             {data.titleZh || data.titleEn}
           </h2>
-          <p className="text-slate-400 text-xs mt-1 truncate">
-            {t.unit}: {data.yAxisLabel}
-          </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
            {/* Source Badge */}
@@ -181,12 +181,39 @@ const ChartSection: React.FC<ChartSectionProps> = ({
             <YAxis yAxisId="left" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(1)}k` : v} />
             <YAxis yAxisId="right" orientation="right" stroke="#10b981" fontSize={10} tickLine={false} axisLine={false} tickFormatter={v => `${v}x`} domain={[0, 'auto']} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend verticalAlign="top" align="right" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+            {/* Legend removed from here, moved to footer */}
             <Area yAxisId="left" type="monotone" dataKey="usa" name={t.usa} stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorUsa)" />
             <Area yAxisId="left" type="monotone" dataKey="china" name={t.china} stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorChina)" />
             <Line yAxisId="right" type="monotone" dataKey="ratio" name={t.ratio} stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={{ r: 4 }} />
           </ComposedChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* Footer: Legend and Unit Info */}
+      <div className="flex items-center justify-center gap-4 mt-4 pt-2 border-t border-slate-700/30">
+        {/* Legend */}
+        <div className="flex items-center gap-5 text-xs font-medium">
+            <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#6366f1]"></span>
+                <span className="text-slate-300">{t.usa}</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444]"></span>
+                <span className="text-slate-300">{t.china}</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <span className="w-4 h-0 border-t-2 border-dashed border-[#10b981]"></span>
+                <span className="text-slate-300">{t.ratio}</span>
+            </div>
+        </div>
+
+        {/* Separator */}
+        <div className="w-px h-3 bg-slate-600"></div>
+
+        {/* Unit Info */}
+        <div className="text-xs text-slate-400">
+            {t.unit}: <span className="text-slate-300">{data.yAxisLabel}</span>
+        </div>
       </div>
     </div>
   );
