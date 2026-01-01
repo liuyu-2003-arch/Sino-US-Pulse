@@ -2,7 +2,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ComparisonResponse, Language, SavedComparison } from "../types";
 // Use Type-Only import to avoid runtime dependency at top-level
-import type { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
+import type { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -93,6 +93,47 @@ const updateLibraryIndex = async (newItem: LibraryIndexItem) => {
     }
 };
 
+export const deleteComparison = async (key: string) => {
+    try {
+        const { DeleteObjectCommand, PutObjectCommand, GetObjectCommand } = await import("@aws-sdk/client-s3");
+        const client = await getS3Client();
+
+        // 1. Delete the actual JSON file
+        const delCmd = new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key });
+        await client.send(delCmd);
+
+        // 2. Remove from index
+        let index: LibraryIndex = { items: [] };
+        try {
+            const getCmd = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: LIBRARY_INDEX_KEY });
+            const res = await client.send(getCmd);
+            if (res.Body) {
+                const str = await res.Body.transformToString();
+                index = JSON.parse(str);
+            }
+        } catch (e: any) {
+            // If index missing, nothing to update
+            return;
+        }
+
+        const newItems = index.items.filter(i => i.key !== key);
+        if (newItems.length !== index.items.length) {
+            index.items = newItems;
+            const putCmd = new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: LIBRARY_INDEX_KEY,
+                Body: JSON.stringify(index),
+                ContentType: "application/json",
+                CacheControl: "no-cache"
+            });
+            await client.send(putCmd);
+        }
+    } catch (e) {
+        console.error("Delete failed", e);
+        throw e;
+    }
+};
+
 export const listSavedComparisons = async (language: Language): Promise<SavedComparison[]> => {
     const index = await fetchLibraryIndex();
     return index.items.map(item => ({
@@ -167,7 +208,8 @@ const responseSchema = {
 export const fetchComparisonData = async (
     query: string, 
     language: Language, 
-    forceRefresh: boolean = false
+    forceRefresh: boolean = false,
+    canCreate: boolean = false
 ): Promise<{ data: ComparisonResponse; uploadPromise?: Promise<void> }> => {
     if (!forceRefresh) {
         try {
@@ -181,6 +223,11 @@ export const fetchComparisonData = async (
                 return { data: cachedData };
             }
         } catch (e) {}
+    }
+
+    // Restriction check: If not cached and not allowed to create, throw error
+    if (!canCreate) {
+        throw { code: 'PERMISSION_DENIED', message: 'Only administrators can generate new comparisons.' };
     }
 
     const langName = language === 'zh' ? 'Chinese (Simplified)' : 'English';
