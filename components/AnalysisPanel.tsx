@@ -1,19 +1,18 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { ComparisonResponse, Language } from '../types';
+import { ComparisonResponse } from '../types';
 import { TrendingUp, BookOpen, ExternalLink, Lightbulb, Telescope } from 'lucide-react';
 
 interface AnalysisPanelProps {
   data: ComparisonResponse;
-  language: Language;
 }
 
-const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ data, language }) => {
+const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ data }) => {
   const t = {
-    summary: language === 'zh' ? '核心摘要' : 'Executive Summary',
-    trendAnalysis: language === 'zh' ? '趋势分析' : 'Trend Analysis',
-    futureOutlook: language === 'zh' ? '未来展望' : 'Future Outlook',
-    sources: language === 'zh' ? '数据来源参考' : 'Data Sources'
+    summary: '核心摘要',
+    trendAnalysis: '趋势分析',
+    futureOutlook: '未来展望',
+    sources: '数据来源参考'
   };
 
   // Shared markdown styles for consistent rendering across panels

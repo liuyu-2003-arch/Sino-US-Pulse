@@ -37,3 +37,34 @@ export const signOut = async () => {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 };
+
+// --- Favorites System ---
+
+export const getFavorites = async (userId: string): Promise<string[]> => {
+    const { data, error } = await supabase
+        .from('favorites')
+        .select('comparison_key')
+        .eq('user_id', userId);
+    
+    if (error) {
+        console.error('Error fetching favorites:', error);
+        return [];
+    }
+    return data.map(item => item.comparison_key);
+};
+
+export const addFavorite = async (userId: string, key: string) => {
+    const { error } = await supabase
+        .from('favorites')
+        .insert({ user_id: userId, comparison_key: key });
+    if (error) throw error;
+};
+
+export const removeFavorite = async (userId: string, key: string) => {
+    const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('user_id', userId)
+        .eq('comparison_key', key);
+    if (error) throw error;
+};

@@ -5,17 +5,16 @@ import { signInWithGoogle, signInWithGithub } from '../services/supabase';
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  language: 'en' | 'zh';
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, language }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const t = {
-    title: language === 'zh' ? '登录 / 注册' : 'Login / Sign Up',
-    google: language === 'zh' ? '使用 Google 登录' : 'Continue with Google',
-    github: language === 'zh' ? '使用 GitHub 登录' : 'Continue with GitHub',
-    desc: language === 'zh' ? '管理员可管理数据，访客仅可浏览。' : 'Admins can manage data, guests can only view.',
+    title: '登录 / 注册',
+    google: '使用 Google 登录',
+    github: '使用 GitHub 登录',
+    desc: '管理员可管理数据，注册用户可收藏对比，访客仅可浏览。',
   };
 
   return (

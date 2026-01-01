@@ -1,47 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { SavedComparison, Language } from '../types';
-import { listSavedComparisons, deleteComparison } from '../services/geminiService';
-import { X, Calendar, Database, Search, Loader2, Plus, Trash2, AlertTriangle, Lock } from 'lucide-react';
+import { SavedComparison } from '../types';
+import { listSavedComparisons } from '../services/geminiService';
+import { X, Calendar, Database, Search, Loader2, Plus, Lock } from 'lucide-react';
 
 interface ArchiveModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (key: string) => void;
   onCreate: (query: string) => void;
-  language: Language;
   isAdmin: boolean;
 }
 
-const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, onCreate, language, isAdmin }) => {
+const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, onCreate, isAdmin }) => {
   const [items, setItems] = useState<SavedComparison[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState('');
-  const [deletingKey, setDeletingKey] = useState<string | null>(null);
 
   const t = {
-    title: language === 'zh' ? '云端资料库' : 'Cloud Library',
-    searchPlaceholder: language === 'zh' ? '搜索...' : 'Search...',
-    empty: language === 'zh' ? '暂无匹配记录' : 'No matching records',
-    loading: language === 'zh' ? '正在加载列表...' : 'Loading library...',
-    generatedOn: language === 'zh' ? '生成于' : 'Generated on',
-    create: language === 'zh' ? '创建' : 'Create',
-    createNew: language === 'zh' ? '生成新对比' : 'Generate New',
-    createPrompt: language === 'zh' ? '未找到相关记录。管理员可创建新对比。' : 'No records found. Admins can create new comparisons.',
-    createPromptGuest: language === 'zh' ? '未找到相关记录。请联系管理员添加。' : 'No records found. Contact admin to add.',
-    deleteConfirm: language === 'zh' ? '确定要删除此记录吗？' : 'Delete this record?',
-    adminOnly: language === 'zh' ? '仅管理员' : 'Admin Only',
+    title: '云端资料库',
+    searchPlaceholder: '搜索...',
+    empty: '暂无匹配记录',
+    loading: '正在加载列表...',
+    generatedOn: '生成于',
+    create: '创建',
+    createNew: '生成新对比',
+    createPrompt: '未找到相关记录。管理员可创建新对比。',
+    createPromptGuest: '未找到相关记录。请联系管理员添加。',
   };
 
   useEffect(() => {
     if (isOpen) {
       loadItems();
     }
-  }, [isOpen, language]);
+  }, [isOpen]);
 
   const loadItems = async () => {
     setIsLoading(true);
     try {
-      const data = await listSavedComparisons(language);
+      const data = await listSavedComparisons('zh');
       setItems(data);
     } catch (error) {
       console.error("Failed to load archive", error);
@@ -50,25 +46,8 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, key: string) => {
-    e.stopPropagation();
-    if (!window.confirm(t.deleteConfirm)) return;
-    
-    setDeletingKey(key);
-    try {
-        await deleteComparison(key);
-        await loadItems();
-    } catch (err) {
-        alert("Delete failed");
-    } finally {
-        setDeletingKey(null);
-    }
-  };
-
   const getDisplayTitle = (item: SavedComparison) => {
-    let title = item.displayName || item.filename;
-    if (language === 'zh' && item.titleZh) title = item.titleZh;
-    else if (language === 'en' && item.titleEn) title = item.titleEn;
+    let title = item.titleZh || item.titleEn || item.displayName || item.filename;
     title = title.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '');
     title = title.replace(/[\(\（]\s*[\)\）]/g, '');
     return title.trim();
@@ -197,7 +176,7 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
                 <div
                   key={item.key}
                   onClick={() => onSelect(item.key)}
-                  className="flex items-center justify-between p-4 rounded-xl hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all group text-left cursor-pointer relative"
+                  className="flex items-center justify-between p-4 rounded-xl hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all group text-left cursor-pointer"
                 >
                   <div className="flex-1 min-w-0 pr-8">
                     <h3 className="font-medium text-slate-200 truncate group-hover:text-indigo-400 transition-colors">
@@ -210,15 +189,6 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose, onSelect, 
                         </div>
                     )}
                   </div>
-                  {isAdmin && (
-                      <button 
-                        onClick={(e) => handleDelete(e, item.key)}
-                        className="absolute right-4 p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                        title="Delete"
-                      >
-                         {deletingKey === item.key ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      </button>
-                  )}
                 </div>
               ))}
             </div>

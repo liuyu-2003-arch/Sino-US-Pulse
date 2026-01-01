@@ -1,19 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { fetchComparisonData, fetchSavedComparisonByKey, listSavedComparisons } from './services/geminiService';
-import { supabase, isUserAdmin, signOut } from './services/supabase';
-import { ComparisonResponse, PRESET_QUERIES, Language, SavedComparison } from './types';
+import { fetchComparisonData, fetchSavedComparisonByKey, listSavedComparisons, deleteComparison } from './services/geminiService';
+import { supabase, isUserAdmin, signOut, getFavorites, addFavorite, removeFavorite } from './services/supabase';
+import { ComparisonResponse, PRESET_QUERIES, SavedComparison } from './types';
 import ChartSection from './components/ChartSection';
 import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
 import LoginModal from './components/LoginModal';
-import { Globe, Menu, X, Database, History, BarChart3, Loader2, LogIn, LogOut, User } from 'lucide-react';
+import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [language, setLanguage] = useState<Language>(() => {
-    const saved = localStorage.getItem('sino_pulse_language');
-    return (saved === 'en' || saved === 'zh') ? saved : 'zh';
-  });
+  // Hardcoded to Chinese for this version as requested
+  const language = 'zh';
 
   const [data, setData] = useState<ComparisonResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -21,8 +19,12 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeItemKey, setActiveItemKey] = useState<string>('');
   const [currentQuery, setCurrentQuery] = useState<string>('');
-  const [libraryItems, setLibraryItems] = useState<SavedComparison[]>([]);
+  
+  // Data for Sidebar (Favorites now) and Archive
+  const [allLibraryItems, setAllLibraryItems] = useState<SavedComparison[]>([]);
+  const [favoriteKeys, setFavoriteKeys] = useState<string[]>([]);
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
+  
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   
@@ -32,21 +34,24 @@ const App: React.FC = () => {
   const isAdmin = isUserAdmin(user);
 
   const t = {
-    title: language === 'zh' ? '中美脉搏' : 'SinoUS Pulse',
-    libraryTitle: language === 'zh' ? '历史对比' : 'Saved Archive',
-    noItems: language === 'zh' ? '暂无记录' : 'No records yet',
-    poweredBy: language === 'zh' ? '由 Gemini 3 Pro 驱动' : 'Powered by Gemini 3 Pro',
-    loadingTitle: language === 'zh' ? '正在分析历史数据...' : 'Analyzing Historical Data...',
-    loadingSub: language === 'zh' ? '正在收集关于中美对比的见解' : 'Gathering insights for USA vs China',
-    errorTitle: language === 'zh' ? '错误' : 'Error',
-    retry: language === 'zh' ? '重试' : 'Retry',
-    errorGeneric: language === 'zh' ? '生成数据失败。' : 'Failed to generate data.',
-    cloudLibrary: language === 'zh' ? '搜索云端 / 创建新对比' : 'Search Cloud / Create New',
-    login: language === 'zh' ? '登录账户' : 'Login',
-    logout: language === 'zh' ? '退出登录' : 'Logout',
-    guest: language === 'zh' ? '访客' : 'Guest',
-    admin: language === 'zh' ? '管理员' : 'Admin',
-    permissionDenied: language === 'zh' ? '权限拒绝：仅管理员可创建新对比。' : 'Permission Denied: Only admins can generate new comparisons.'
+    title: '中美脉搏',
+    favoritesTitle: '我的收藏',
+    noItems: '暂无收藏',
+    noItemsGuest: '登录以收藏对比',
+    poweredBy: '由 Gemini 3 Pro 驱动',
+    loadingTitle: '正在分析历史数据...',
+    loadingSub: '正在收集关于中美对比的见解',
+    errorTitle: '错误',
+    retry: '重试',
+    errorGeneric: '生成数据失败。',
+    cloudLibrary: '搜索云端 / 创建新对比',
+    login: '登录账户',
+    logout: '退出登录',
+    guest: '访客',
+    admin: '管理员',
+    permissionDenied: '权限拒绝：仅管理员可创建新对比。',
+    deleteSuccess: '删除成功',
+    deleteFail: '删除失败'
   };
 
   useEffect(() => {
@@ -63,11 +68,19 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const loadLibraryList = async () => {
+  // Fetch all items from R2 (metadata) and User's favorites
+  const loadLibraryAndFavorites = async () => {
     setIsLibraryLoading(true);
     try {
       const items = await listSavedComparisons(language);
-      setLibraryItems(items);
+      setAllLibraryItems(items);
+
+      if (user) {
+          const favs = await getFavorites(user.id);
+          setFavoriteKeys(favs);
+      } else {
+          setFavoriteKeys([]);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -76,17 +89,22 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadLibraryList();
+      loadLibraryAndFavorites();
+  }, [user]); // Reload when user changes
+
+  useEffect(() => {
     if (currentQuery) {
         loadData(currentQuery);
     } else {
         loadInitialData();
     }
-  }, [language]);
+  }, []);
 
   const loadInitialData = async () => {
       setLoading(true);
       try {
+          // If there are library items, load the first one (most recent usually)
+          // We need to fetch items first if not loaded, but since effect runs parallel, we do a quick fetch
           const items = await listSavedComparisons(language);
           if (items.length > 0) {
               await loadSavedItem(items[0].key);
@@ -106,14 +124,21 @@ const App: React.FC = () => {
     setSyncState('idle');
     setCurrentQuery(query);
     try {
-      // Pass isAdmin as canCreate parameter
       const { data, uploadPromise } = await fetchComparisonData(query, language, forceRefresh, isAdmin);
       setData(data);
+      
+      // We set active item key if we can find it in the library logic, 
+      // but if it's new it won't have a key immediately until we refetch library.
+      // For now, reset key so sidebar doesn't show wrong selection.
+      const safeTitle = (data.titleEn || data.title || 'untitled').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const derivedKey = `sino-pulse/v1/${safeTitle}.json`;
+      setActiveItemKey(derivedKey);
+
       if (data.source === 'api' && uploadPromise) {
           setSyncState('syncing');
           uploadPromise.then(() => {
               setSyncState('success');
-              loadLibraryList();
+              loadLibraryAndFavorites(); // Refresh library
           }).catch(() => setSyncState('error'));
       }
     } catch (err: any) {
@@ -159,6 +184,40 @@ const App: React.FC = () => {
       }
   };
 
+  const handleDelete = async () => {
+      if (!data || !activeItemKey) return;
+      if (!window.confirm("确定要删除当前对比吗？此操作不可恢复。")) return;
+
+      try {
+          await deleteComparison(activeItemKey);
+          await loadLibraryAndFavorites();
+          // Reset to default or clear
+          await loadInitialData();
+      } catch (e) {
+          alert(t.deleteFail);
+      }
+  };
+
+  const handleToggleFavorite = async () => {
+      if (!user || !activeItemKey) return;
+      
+      const isFav = favoriteKeys.includes(activeItemKey);
+      try {
+          if (isFav) {
+              await removeFavorite(user.id, activeItemKey);
+              setFavoriteKeys(prev => prev.filter(k => k !== activeItemKey));
+          } else {
+              await addFavorite(user.id, activeItemKey);
+              setFavoriteKeys(prev => [...prev, activeItemKey]);
+          }
+      } catch (e) {
+          console.error("Favorite toggle failed", e);
+      }
+  };
+
+  // Derive display list for sidebar
+  const favoriteItems = allLibraryItems.filter(item => favoriteKeys.includes(item.key));
+
   const renderSkeleton = () => (
     <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden flex flex-col">
@@ -182,14 +241,12 @@ const App: React.FC = () => {
         onClose={() => setIsArchiveOpen(false)} 
         onSelect={loadSavedItem} 
         onCreate={handleCreateFromArchive} 
-        language={language}
         isAdmin={isAdmin}
       />
       
       <LoginModal 
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
-        language={language}
       />
 
       {isSidebarOpen && <div className="fixed inset-0 bg-black/60 z-20 lg:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />}
@@ -201,23 +258,36 @@ const App: React.FC = () => {
                 <span className="text-xl font-bold tracking-tight text-white">{t.title}</span>
             </div>
         </div>
-        <div className="px-6 py-4 border-b border-slate-800 flex gap-2">
-            <button onClick={() => { setLanguage('zh'); localStorage.setItem('sino_pulse_language', 'zh'); }} className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${language === 'zh' ? 'bg-indigo-600 text-white' : 'text-slate-400 bg-slate-800'}`}>中文</button>
-            <button onClick={() => { setLanguage('en'); localStorage.setItem('sino_pulse_language', 'en'); }} className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${language === 'en' ? 'bg-indigo-600 text-white' : 'text-slate-400 bg-slate-800'}`}>English</button>
-        </div>
         
         <div className="p-4">
             <button onClick={() => setIsArchiveOpen(true)} className="w-full flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-semibold transition-all text-left text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 shadow-lg"><Database className="w-5 h-5 text-emerald-400" /> <span className="truncate flex-1">{t.cloudLibrary}</span></button>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
-          <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-2 px-2 flex justify-between items-center">{t.libraryTitle} <History className="w-3 h-3 text-slate-600" /></h3>
-          {isLibraryLoading && libraryItems.length === 0 ? <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-slate-600" /></div> : libraryItems.length === 0 ? <div className="px-2 py-4 text-xs text-slate-600 italic">{t.noItems}</div> : libraryItems.map((item) => {
+          <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-2 px-2 flex justify-between items-center">{t.favoritesTitle} <FolderHeart className="w-3 h-3 text-slate-600" /></h3>
+          
+          {/* Guest State */}
+          {!user && (
+              <div className="px-2 py-8 text-center">
+                  <p className="text-xs text-slate-500 italic mb-3">{t.noItemsGuest}</p>
+                  <button onClick={() => setIsLoginOpen(true)} className="text-xs text-indigo-400 hover:text-indigo-300 underline">立即登录</button>
+              </div>
+          )}
+
+          {/* Logged in but loading or empty */}
+          {user && isLibraryLoading && favoriteItems.length === 0 ? (
+             <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-slate-600" /></div>
+          ) : user && favoriteItems.length === 0 ? (
+             <div className="px-2 py-4 text-xs text-slate-600 italic text-center">{t.noItems}</div>
+          ) : (
+            // User Favorites List
+            favoriteItems.map((item) => {
                 const isActive = activeItemKey === item.key;
-                const displayTitle = (language === 'zh' ? item.titleZh : item.titleEn) || item.filename;
+                const displayTitle = item.titleZh || item.titleEn || item.filename;
                 const cleanTitle = displayTitle.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
                 return <button key={item.key} onClick={() => loadSavedItem(item.key)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${isActive ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-600/20' : 'text-slate-400 hover:bg-slate-800'}`}><BarChart3 className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-400' : 'text-slate-500'}`} /> <span className="truncate flex-1">{cleanTitle}</span></button>;
-          })}
+            })
+          )}
         </nav>
         
         {/* User / Login Section */}
@@ -258,7 +328,20 @@ const App: React.FC = () => {
           {loading && !data ? renderSkeleton() : error ? <div className="flex items-center justify-center h-full text-red-400"><div className="text-center max-w-md"><p className="text-lg font-semibold mb-2">{t.errorTitle}</p><p className="font-mono text-sm bg-red-950/50 border border-red-900/50 px-3 py-2 rounded mb-4 break-words">{error}</p>
           {error !== t.permissionDenied && <button onClick={() => loadData(PRESET_QUERIES[0].query)} className="mt-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors text-slate-200 font-medium">{t.retry}</button>}
           {error === t.permissionDenied && !user && <button onClick={() => setIsLoginOpen(true)} className="mt-2 px-4 py-2 bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors text-white font-medium">{t.login}</button>}
-          </div></div> : data ? <div className="max-w-6xl mx-auto space-y-8"><div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden"><ChartSection data={data} onRefresh={handleRefresh} isLoading={loading} language={language} syncState={syncState} /></div><AnalysisPanel data={data} language={language} /></div> : null}
+          </div></div> : data ? <div className="max-w-6xl mx-auto space-y-8"><div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden">
+            <ChartSection 
+                data={data} 
+                onRefresh={handleRefresh} 
+                isLoading={loading} 
+                syncState={syncState} 
+                isAdmin={isAdmin}
+                onDelete={handleDelete}
+                isFavorite={user && activeItemKey ? favoriteKeys.includes(activeItemKey) : false}
+                onToggleFavorite={handleToggleFavorite}
+                isLoggedIn={!!user}
+                onLoginRequest={() => setIsLoginOpen(true)}
+            />
+            </div><AnalysisPanel data={data} /></div> : null}
         </div>
       </main>
     </div>
