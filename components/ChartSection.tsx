@@ -153,7 +153,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({
 
           <div className="h-6 w-px bg-slate-700 mx-1"></div>
 
-          {/* Favorite Button */}
+          {/* Favorite Button - Visible to everyone (triggers login if guest) */}
           <button
             onClick={isLoggedIn ? onToggleFavorite : onLoginRequest}
             className={`p-2 rounded-lg transition-colors ${isFavorite ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20' : 'text-slate-400 hover:text-amber-400 hover:bg-slate-800'}`}
@@ -162,19 +162,19 @@ const ChartSection: React.FC<ChartSectionProps> = ({
              <Star className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
           </button>
 
-          {/* Refresh Button */}
-          <button
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors disabled:opacity-50"
-            title="刷新数据"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-
-          {/* Edit/Delete Buttons (Admin Only) */}
+          {/* Admin Only Actions: Refresh, Edit, Delete */}
           {isAdmin && (
             <>
+             {/* Refresh Button - Moved inside isAdmin check */}
+             <button
+                onClick={onRefresh}
+                disabled={isLoading}
+                className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors disabled:opacity-50"
+                title="刷新数据 (管理员)"
+             >
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+             </button>
+
              <button
                 onClick={onEdit}
                 className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors ml-1"
