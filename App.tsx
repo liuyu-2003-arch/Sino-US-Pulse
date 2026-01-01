@@ -18,7 +18,8 @@ import {
     Leaf,
     BarChart3,
     Loader2,
-    PlusCircle
+    PlusCircle,
+    Search
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -52,14 +53,13 @@ const App: React.FC = () => {
     searchPlaceholder: language === 'zh' ? '输入任何对比话题...' : 'Compare anything...',
     libraryTitle: language === 'zh' ? '历史对比' : 'Saved Archive',
     noItems: language === 'zh' ? '暂无记录' : 'No records yet',
-    poweredBy: language === 'zh' ? '由 Gemini 2.0 Flash 驱动' : 'Powered by Gemini 2.0 Flash',
+    poweredBy: language === 'zh' ? '由 Gemini 3 Pro 驱动' : 'Powered by Gemini 3 Pro',
     loadingTitle: language === 'zh' ? '正在分析历史数据...' : 'Analyzing Historical Data...',
     loadingSub: language === 'zh' ? '正在收集关于中美对比的见解' : 'Gathering insights for USA vs China',
     errorTitle: language === 'zh' ? '错误' : 'Error',
     retry: language === 'zh' ? '重试' : 'Retry',
     errorGeneric: language === 'zh' ? '生成数据失败。' : 'Failed to generate data.',
-    cloudLibrary: language === 'zh' ? '搜索云端' : 'Search Cloud',
-    newTopic: language === 'zh' ? '创建新话题' : 'New Topic'
+    cloudLibrary: language === 'zh' ? '搜索云端 / 创建新话题' : 'Search Cloud / Create New'
   };
 
   const changeLanguage = (newLang: Language) => {
@@ -87,7 +87,6 @@ const App: React.FC = () => {
     if (currentQuery) {
         loadData(currentQuery);
     } else {
-        // Use first preset as default if library empty, else load latest from library
         loadInitialData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,13 +117,12 @@ const App: React.FC = () => {
       const { data, uploadPromise } = await fetchComparisonData(query, language, forceRefresh);
       setData(data);
 
-      // Handle background synchronization status
       if (data.source === 'api' && uploadPromise) {
           setSyncState('syncing');
           uploadPromise
             .then(() => {
                 setSyncState('success');
-                loadLibraryList(); // Refresh sidebar after successful save
+                loadLibraryList();
             })
             .catch((e) => {
                 console.error("Sync failed", e);
@@ -174,12 +172,12 @@ const App: React.FC = () => {
       }
   };
 
-  const handleDownload = () => {
-      // (Keep existing handleDownload logic - omitted for brevity in XML but assumed present in original)
-      // I will keep the original file's logic for full content
+  const handleCustomSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customQuery.trim()) return;
+    loadData(customQuery);
   };
 
-  // Skeleton Loader Component
   const renderSkeleton = () => (
     <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden flex flex-col">
@@ -240,11 +238,11 @@ const App: React.FC = () => {
       {/* Sidebar */}
       <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-72 bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`}>
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 text-indigo-400">
                 <div className="p-2 bg-indigo-600 rounded-lg">
                     <Globe className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xl font-bold tracking-tight">{t.title}</span>
+                <span className="text-xl font-bold tracking-tight text-white">{t.title}</span>
             </div>
         </div>
 
@@ -254,26 +252,33 @@ const App: React.FC = () => {
         </div>
 
         {/* Sidebar Actions */}
-        <div className="p-4 space-y-2">
+        <div className="p-4">
             <button 
                 onClick={() => setIsArchiveOpen(true)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left text-indigo-400 bg-indigo-600/10 border border-indigo-600/20 hover:bg-indigo-600/20"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-600 group shadow-lg"
             >
-                <PlusCircle className="w-4 h-4" />
-                <span>{t.newTopic}</span>
-            </button>
-            <button 
-                onClick={() => setIsArchiveOpen(true)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left text-slate-300 hover:bg-slate-800 border border-slate-700 bg-slate-800/30 group"
-            >
-                <Database className="w-4 h-4 text-emerald-400" />
+                <Database className="w-5 h-5 text-emerald-400" />
                 <span className="truncate flex-1">{t.cloudLibrary}</span>
             </button>
         </div>
 
+        {/* Quick Search */}
+        <div className="px-4 pb-4">
+          <form onSubmit={handleCustomSearch} className="relative">
+            <input
+              type="text"
+              value={customQuery}
+              onChange={(e) => setCustomQuery(e.target.value)}
+              placeholder={t.searchPlaceholder}
+              className="w-full bg-slate-800/50 text-xs text-slate-300 rounded-lg pl-9 pr-4 py-2 border border-slate-700/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 placeholder-slate-600"
+            />
+            <Search className="w-3.5 h-3.5 text-slate-600 absolute left-3 top-2.5" />
+          </form>
+        </div>
+
         {/* Dynamic Sidebar Content: Saved Library Items */}
         <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2 flex justify-between items-center">
+          <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-2 px-2 flex justify-between items-center">
             {t.libraryTitle}
             <History className="w-3 h-3 text-slate-600" />
           </h3>
@@ -290,7 +295,6 @@ const App: React.FC = () => {
               libraryItems.map((item) => {
                 const isActive = activeItemKey === item.key;
                 const displayTitle = (language === 'zh' ? item.titleZh : item.titleEn) || item.filename;
-                // Clean title
                 const cleanTitle = displayTitle.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
 
                 return (
@@ -308,7 +312,7 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-            <div className="text-xs text-slate-500 text-center">{t.poweredBy}</div>
+            <div className="text-[10px] text-slate-600 text-center uppercase tracking-widest">{t.poweredBy}</div>
         </div>
       </aside>
 
@@ -338,7 +342,7 @@ const App: React.FC = () => {
           ) : data ? (
             <div className="max-w-6xl mx-auto space-y-8">
               <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden">
-                <ChartSection data={data} onRefresh={handleRefresh} onDownload={handleDownload} isLoading={loading} language={language} syncState={syncState} />
+                <ChartSection data={data} onRefresh={handleRefresh} isLoading={loading} language={language} syncState={syncState} />
               </div>
               <AnalysisPanel data={data} language={language} />
             </div>
