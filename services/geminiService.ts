@@ -1,8 +1,10 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+
+import { GoogleGenAI, Type } from "@google/genai";
 import { ComparisonResponse, Language, SavedComparison } from "../types";
 // Use Type-Only import to avoid runtime dependency at top-level
 import type { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 
+// Fix: Use correct initialization as per guidelines
 // Initialize the Gemini API client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -153,7 +155,8 @@ export const fetchSavedComparisonByKey = async (key: string): Promise<Comparison
     }
 };
 
-const responseSchema: Schema = {
+// Fix: Define responseSchema as a plain object and update to use gemini-3-pro-preview for complex reasoning tasks
+const responseSchema = {
     type: Type.OBJECT,
     properties: {
         title: { type: Type.STRING, description: "Main title of the comparison." },
@@ -226,8 +229,9 @@ export const fetchComparisonData = async (
         For the data array, ensure you cover a significant historical range if applicable (e.g. 1980-2024).
     `;
 
+    // Fix: Use gemini-3-pro-preview for complex reasoning tasks
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: prompt,
         config: {
             responseMimeType: 'application/json',

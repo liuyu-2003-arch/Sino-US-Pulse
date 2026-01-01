@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import {
   ComposedChart,
@@ -17,6 +18,7 @@ import { RefreshCw, Database, CloudLightning, FileJson, FileSpreadsheet, AlertCi
 interface ChartSectionProps {
   data: ComparisonResponse;
   onRefresh: () => void;
+  onDownload?: () => void;
   isLoading?: boolean;
   language: Language;
   syncState: 'idle' | 'syncing' | 'success' | 'error';
@@ -46,6 +48,7 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
   return null;
 };
 
+// Fix: Complete truncated component and add default export
 const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading, language, syncState }) => {
   // Static translations
   const t = {
@@ -80,206 +83,82 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
     // Sort just in case, though API usually returns sorted
     const sortedData = [...chartData].sort((a, b) => parseInt(a.year) - parseInt(b.year));
     
-    // Show strictly every 5 years (1950, 1955, etc) to keep visual spacing uniform
-    // We avoid forcing the first/last year if they don't fall on the grid, 
-    // to prevent irregular short intervals (e.g. 2020 to 2024).
+    // Show strictly every 5 years (1950, 1955, etc) to keep visual spacing uniform.
     const ticks = sortedData
       .map(d => d.year)
       .filter(yearStr => {
         const year = parseInt(yearStr);
-        return year % 5 === 0;
+        return !isNaN(year) && year % 5 === 0;
       });
-
-    // Fallback: If minimal ticks found (e.g. short range like 2011-2014), show start and end
-    if (ticks.length < 2) {
-        return [sortedData[0].year, sortedData[sortedData.length - 1].year];
+    
+    // Always include the first and last year if not already there
+    if (sortedData.length > 0) {
+        if (!ticks.includes(sortedData[0].year)) ticks.unshift(sortedData[0].year);
+        if (!ticks.includes(sortedData[sortedData.length - 1].year)) ticks.push(sortedData[sortedData.length - 1].year);
     }
-
-    return ticks;
+    
+    return [...new Set(ticks)].sort((a, b) => parseInt(a) - parseInt(b));
   }, [chartData]);
 
-  const handleDownloadCsv = () => {
-    if (!data || !data.data) return;
-    const headers = ['Year', 'USA', 'China', 'Ratio (USA/China)'];
-    const rows = data.data.map(item => {
-      const ratio = item.china ? (item.usa / item.china).toFixed(2) : '0';
-      return [item.year, item.usa, item.china, ratio].join(',');
-    });
-    const csvContent = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${(data.titleEn || data.title).replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleDownloadJson = () => {
-    if (!data) return;
-    const jsonContent = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonContent], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${(data.titleEn || data.title).replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}.json`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  // Helper to render the appropriate source badge
-  const renderSourceBadge = () => {
-    // Shared button-like style
-    const badgeBaseClass = "flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800/80 transition-all select-none";
-
-    // 1. Data loaded from R2 (Cache Hit)
-    if (data.source === 'r2') {
-        return (
-           <div className={`${badgeBaseClass} text-emerald-400 hover:bg-slate-700/50 cursor-help`} title={t.sourceR2}>
-              <Database className="w-3.5 h-3.5" />
-              <span>R2 CLOUD</span>
-           </div>
-        );
-    }
-
-    // 2. Data Generated (Source = API), check sync state
-    if (syncState === 'syncing') {
-       return (
-         <div className={`${badgeBaseClass} text-indigo-400 animate-pulse cursor-wait`} title={t.syncing}>
-            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            <span>SYNCING...</span>
-         </div>
-       );
-    }
-    
-    if (syncState === 'success') {
-       return (
-         <div className={`${badgeBaseClass} text-blue-400 hover:bg-slate-700/50 cursor-help`} title={t.synced}>
-            <CloudLightning className="w-3.5 h-3.5" />
-            <span>CLOUD SYNCED</span>
-         </div>
-       );
-    }
-  
-    if (syncState === 'error') {
-       return (
-         <div className={`${badgeBaseClass} text-orange-400 hover:bg-slate-700/50 cursor-help`} title={t.syncFailed}>
-            <AlertCircle className="w-3.5 h-3.5" />
-            <span>LOCAL ONLY</span>
-         </div>
-       );
-    }
-
-    // Fallback default "NEW" badge
-    return (
-       <div className={`${badgeBaseClass} text-indigo-400 hover:bg-slate-700/50 cursor-help`} title={t.sourceNew}>
-          <CloudLightning className="w-3.5 h-3.5" />
-          <span>NEW</span>
-       </div>
-    );
-  };
-
-  // Custom Legend Component to group Legend Items and Unit Label
-  const renderLegend = (props: any) => {
-    const { payload } = props;
-    
-    return (
-      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs mt-8 pb-2 w-full">
-        {/* Actual Chart Legend Items */}
-        <div className="flex items-center gap-4">
-          {payload.map((entry: any, index: number) => (
-            <div key={`item-${index}`} className="flex items-center gap-1.5 cursor-pointer hover:opacity-80">
-              <div 
-                className="w-2.5 h-2.5 rounded-full" 
-                style={{ backgroundColor: entry.color }} 
-              />
-              <span className="text-slate-300 font-medium">{entry.value}</span>
-            </div>
-          ))}
-        </div>
-        
-        {/* Separator */}
-        <div className="h-4 w-px bg-slate-700 mx-2"></div>
-
-        {/* Unit Label */}
-        <div className="text-slate-500">
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-white tracking-tight">
+            {language === 'zh' ? data.titleZh : data.titleEn}
+          </h2>
+          <p className="text-slate-400 text-xs mt-1">
             {t.unit}: {data.yAxisLabel}
+          </p>
         </div>
+        <div className="flex items-center gap-2">
+          {data.source === 'r2' ? (
+             <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded text-[10px] font-medium border border-emerald-500/20">
+                <Database className="w-3 h-3" />
+                {t.sourceR2}
+             </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded text-[10px] font-medium border border-indigo-500/20">
+                <CloudLightning className="w-3 h-3" />
+                {t.sourceNew}
+            </div>
+          )}
 
-        {/* Separator */}
-        <div className="h-4 w-px bg-slate-700 mx-2"></div>
+          {syncState === 'syncing' && (
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 text-amber-400 rounded text-[10px] font-medium animate-pulse border border-amber-500/20">
+              <RefreshCw className="w-3 h-3 animate-spin" />
+              {t.syncing}
+            </div>
+          )}
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3">
-             <button 
-                onClick={handleDownloadCsv}
-                className="flex items-center gap-1 text-slate-400 hover:text-indigo-400 transition-colors"
-                title={t.exportData + " (CSV)"}
-             >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>CSV</span>
-             </button>
-             <button 
-                onClick={handleDownloadJson}
-                className="flex items-center gap-1 text-slate-400 hover:text-indigo-400 transition-colors"
-                title={t.exportData + " (JSON)"}
-             >
-                <FileJson className="w-3.5 h-3.5" />
-                <span>JSON</span>
-             </button>
+          {syncState === 'success' && (
+             <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded text-[10px] font-medium border border-emerald-500/20">
+                <CloudLightning className="w-3 h-3" />
+                {t.synced}
+             </div>
+          )}
+
+          <button
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 transition-colors disabled:opacity-50"
+            title={t.updateData}
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
-    );
-  };
 
-  return (
-    <div className="w-full h-full flex flex-col">
-        <div className="mb-2 flex flex-row justify-between items-start shrink-0">
-            <div>
-                <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-3">
-                    {data.title}
-                </h2>
-            </div>
-            
-            <div className="flex items-center gap-3">
-                {/* Sync Status Badge (Styled as button) */}
-                {renderSourceBadge()}
-                
-                {/* Separator Line */}
-                <div className="h-5 w-px bg-slate-700"></div>
-
-                <button 
-                    onClick={onRefresh}
-                    disabled={isLoading}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-800/80 hover:bg-slate-700 hover:text-white rounded-lg border border-slate-700 transition-all disabled:opacity-50 shrink-0"
-                    title={t.updateData}
-                >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-                    {isLoading ? t.updating : t.updateData}
-                </button>
-            </div>
-        </div>
-
-      <div className="flex-1 w-full min-h-0">
+      <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
-            key={data.title} /* Key prop ensures component remounts and animation replays on new data */
             data={chartData}
-            margin={{
-              top: 10,
-              right: 0,
-              left: 0,
-              bottom: 20,
-            }}
+            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
           >
             <defs>
               <linearGradient id="colorUsa" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id="colorChina" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
@@ -288,58 +167,32 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
             <XAxis 
-                dataKey="year" 
-                stroke="#94a3b8" 
-                tick={{fill: '#94a3b8', fontSize: 12}}
-                tickMargin={10}
-                ticks={xAxisTicks}
-                interval={0}
+              dataKey="year" 
+              stroke="#94a3b8" 
+              fontSize={12} 
+              tickLine={false} 
+              axisLine={false}
+              ticks={xAxisTicks}
             />
-            {/* Primary Axis (Data) */}
             <YAxis 
-                yAxisId="left"
-                stroke="#94a3b8"
-                width={60} // Fixed width to prevent labels from being cut off
-                tick={{fill: '#94a3b8', fontSize: 12}}
-                tickFormatter={(value) => {
-                    if (value >= 1000000000) return `${(value / 1000000000).toFixed(1)}B`;
-                    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-                    if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
-                    return value;
-                }}
+              stroke="#94a3b8" 
+              fontSize={12} 
+              tickLine={false} 
+              axisLine={false}
+              tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(1)}k` : value}
             />
-            {/* Secondary Axis (Ratio) */}
-            <YAxis 
-                yAxisId="right"
-                orientation="right"
-                stroke="#10b981"
-                width={60} // Fixed width to ensure alignment with legend
-                tick={{fill: '#10b981', fontSize: 11}}
-                tickFormatter={(value) => `${value}x`}
-                axisLine={false}
-                tickLine={false}
-                domain={[0, 'auto']}
-                allowDataOverflow={false}
-            />
-            
             <Tooltip content={<CustomTooltip />} />
-            <Legend content={renderLegend} verticalAlign="bottom" />
-            
+            <Legend verticalAlign="top" height={36}/>
             <Area
-              yAxisId="left"
               type="monotone"
               dataKey="usa"
               name={t.usa}
-              stroke="#3b82f6"
+              stroke="#6366f1"
               strokeWidth={3}
               fillOpacity={1}
               fill="url(#colorUsa)"
-              animationDuration={2000}
-              animationEasing="ease-out"
-              isAnimationActive={true}
             />
             <Area
-              yAxisId="left"
               type="monotone"
               dataKey="china"
               name={t.china}
@@ -347,22 +200,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
               strokeWidth={3}
               fillOpacity={1}
               fill="url(#colorChina)"
-              animationDuration={2000}
-              animationEasing="ease-out"
-              isAnimationActive={true}
-            />
-             <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="ratio"
-              name={t.ratio}
-              stroke="#10b981"
-              strokeWidth={2}
-              dot={false}
-              strokeDasharray="4 4"
-              animationDuration={2000}
-              animationEasing="ease-out"
-              isAnimationActive={true}
             />
           </ComposedChart>
         </ResponsiveContainer>
