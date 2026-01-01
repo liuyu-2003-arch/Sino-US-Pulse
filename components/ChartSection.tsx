@@ -63,22 +63,35 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
     synced: language === 'zh' ? '已同步' : 'Synced',
   };
 
+  // Convert year to number for linear scaling and calculate ratio
   const chartData = useMemo(() => {
     return data.data.map(item => ({
         ...item,
+        yearNum: parseInt(item.year),
         ratio: item.china && item.china !== 0 ? parseFloat((item.usa / item.china).toFixed(2)) : 0
-    }));
+    })).sort((a, b) => a.yearNum - b.yearNum);
   }, [data.data]);
 
+  // Generate uniform ticks every 5 years
   const xAxisTicks = useMemo(() => {
     if (!chartData.length) return [];
-    const sorted = [...chartData].sort((a, b) => parseInt(a.year) - parseInt(b.year));
-    const ticks = sorted
-      .map(d => d.year)
-      .filter(y => parseInt(y) % 5 === 0);
-    if (!ticks.includes(sorted[0].year)) ticks.unshift(sorted[0].year);
-    if (!ticks.includes(sorted[sorted.length - 1].year)) ticks.push(sorted[sorted.length - 1].year);
-    return [...new Set(ticks)].sort((a, b) => parseInt(a) - parseInt(b));
+    
+    const years = chartData.map(d => d.yearNum);
+    const min = Math.min(...years);
+    const max = Math.max(...years);
+    
+    const ticks = [];
+    // Start from the nearest multiple of 5 below min
+    let start = Math.floor(min / 5) * 5;
+    for (let y = start; y <= max; y += 5) {
+      if (y >= min) ticks.push(y);
+    }
+    
+    // Always ensure the first and last years are represented if gaps are large
+    if (!ticks.includes(min)) ticks.unshift(min);
+    if (!ticks.includes(max)) ticks.push(max);
+    
+    return [...new Set(ticks)].sort((a, b) => a - b);
   }, [chartData]);
 
   return (
@@ -135,12 +148,15 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data, onRefresh, isLoading,
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
             <XAxis 
-              dataKey="year" 
+              dataKey="yearNum" 
+              type="number"
+              domain={['dataMin', 'dataMax']}
               stroke="#64748b" 
               fontSize={10} 
               tickLine={false} 
               axisLine={false}
               ticks={xAxisTicks}
+              tickFormatter={(val) => val.toString()}
               dy={10}
             />
             <YAxis 
