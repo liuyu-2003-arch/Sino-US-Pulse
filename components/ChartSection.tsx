@@ -102,6 +102,27 @@ const ChartSection: React.FC<ChartSectionProps> = ({
     return [...new Set(ticks)].sort((a, b) => a - b);
   }, [chartData]);
 
+  // Helper to clean up the yAxisLabel from verbose AI output
+  const displayYAxisLabel = useMemo(() => {
+      let label = data.yAxisLabel || '';
+      
+      // 1. Remove text in brackets []
+      label = label.replace(/\[.*?\]/g, '');
+      
+      // 2. Remove text starting with "Note:" or "Source:"
+      label = label.replace(/(Note|Source):.*/i, '');
+      
+      // 3. Trim whitespace
+      label = label.trim();
+
+      // 4. Handle "GDP (Unit)" pattern -> extract "Unit"
+      if (label.startsWith('GDP (') && label.endsWith(')')) {
+          label = label.substring(5, label.length - 1);
+      }
+
+      return label;
+  }, [data.yAxisLabel]);
+
   if (!chartData.length) {
       return <div className="h-full flex items-center justify-center text-slate-500 italic text-sm">暂无有效图表数据。</div>;
   }
@@ -212,7 +233,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({
 
         {/* Unit Info */}
         <div className="text-xs text-slate-400">
-            {t.unit}: <span className="text-slate-300">{data.yAxisLabel}</span>
+            {t.unit}: <span className="text-slate-300">{displayYAxisLabel}</span>
         </div>
       </div>
     </div>

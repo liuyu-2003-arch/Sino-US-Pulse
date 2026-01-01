@@ -180,7 +180,7 @@ const responseSchema = {
         titleEn: { type: Type.STRING, description: "Clean English title, no meta-commentary." },
         titleZh: { type: Type.STRING, description: "Clean Chinese title, no meta-commentary." },
         category: { type: Type.STRING },
-        yAxisLabel: { type: Type.STRING },
+        yAxisLabel: { type: Type.STRING, description: "Concise unit label (e.g. 'Billions USD'). No notes." },
         summary: { type: Type.STRING },
         detailedAnalysis: { type: Type.STRING },
         futureOutlook: { type: Type.STRING },
@@ -207,7 +207,7 @@ const responseSchema = {
             }
         }
     },
-    required: ["title", "titleEn", "titleZh", "data", "summary", "detailedAnalysis", "futureOutlook"]
+    required: ["title", "titleEn", "titleZh", "data", "summary", "detailedAnalysis", "futureOutlook", "yAxisLabel"]
 };
 
 export const fetchComparisonData = async (
@@ -244,6 +244,7 @@ export const fetchComparisonData = async (
         2. DO NOT include any instructions, meta-commentary, or technical notes in the title fields.
         3. Response language: ${langName}.
         4. Data values MUST be numbers, not strings.
+        5. yAxisLabel MUST be very short and clean (e.g. "Billions USD", "Percentage", "Tons"). DO NOT include notes, projections disclaimer, or text in brackets [].
     `;
 
     const response = await ai.models.generateContent({
