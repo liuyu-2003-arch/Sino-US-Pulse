@@ -99,6 +99,7 @@ const App: React.FC = () => {
     logout: '退出登录',
     guest: '访客',
     admin: '管理员',
+    standardUser: '普通用户',
     permissionDenied: '权限拒绝：仅管理员可创建新对比。',
     deleteSuccess: '删除成功',
     deleteFail: '删除失败',
@@ -422,7 +423,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="flex flex-col min-w-0 text-left">
                         <span className="text-xs font-medium text-slate-200 truncate max-w-[120px]">{user.email}</span>
-                        <span className="text-[10px] text-indigo-400 font-bold uppercase">{isAdmin ? t.admin : t.guest}</span>
+                        <span className="text-[10px] text-indigo-400 font-bold uppercase">{isAdmin ? t.admin : t.standardUser}</span>
                     </div>
                 </div>
                 <button onClick={signOut} className={`text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors ${isMobile ? 'p-1.5' : 'p-2'}`} title={t.logout}>
