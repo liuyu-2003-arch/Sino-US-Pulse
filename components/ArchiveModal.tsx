@@ -247,12 +247,6 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
                         <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 ml-0">
                             <Calendar className="w-3 h-3" />
                             <span>{t.generatedOn} {new Date(item.lastModified).toLocaleDateString()}</span>
-                            {item.favoriteCount !== undefined && item.favoriteCount > 0 && mode === 'popular' && (
-                                <span className="flex items-center gap-1 ml-2 text-orange-400/80">
-                                    <Star className="w-3 h-3 fill-current" />
-                                    {item.favoriteCount}
-                                </span>
-                            )}
                         </div>
                     )}
                   </div>
