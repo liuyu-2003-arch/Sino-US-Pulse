@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ComparisonResponse } from '../types';
+import { ComparisonResponse, CATEGORY_MAP } from '../types';
 import { X, Save, Edit3, Loader2 } from 'lucide-react';
 
 interface EditModalProps {
@@ -90,6 +90,21 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave }) 
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
                     />
                 </div>
+            </div>
+
+            <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-400">分类 (Category)</label>
+                <select
+                    value={formData.category || 'Custom'}
+                    onChange={(e) => handleChange('category', e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                    {Object.entries(CATEGORY_MAP).sort((a, b) => a[1].localeCompare(b[1], 'zh')).map(([key, label]) => (
+                        <option key={key} value={key}>
+                            {label} ({key})
+                        </option>
+                    ))}
+                </select>
             </div>
 
             <div className="space-y-2">

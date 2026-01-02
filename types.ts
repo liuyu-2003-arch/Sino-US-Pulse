@@ -26,6 +26,42 @@ export interface ComparisonResponse {
   source?: 'r2' | 'api';
 }
 
+export const CATEGORY_MAP: Record<string, string> = {
+  'Economy': '经济',
+  'Technology': '科技',
+  'Demographics': '人口',
+  'Military': '军事',
+  'Environment': '环境',
+  'Education': '教育',
+  'Custom': '其他',
+  'Culture': '文化',
+  'Health': '健康',
+  'Society': '社会',
+  'Politics': '政治',
+  'Infrastructure': '基建',
+  'Diplomacy': '外交',
+  'International Relations': '国际关系',
+  'Science & Society': '科学与社会',
+  'Tourism': '旅游',
+  'Space': '航天',
+  'Sports': '体育',
+  'Entertainment': '娱乐',
+  'Transportation': '交通',
+  'Energy': '能源',
+  'Agriculture': '农业',
+  'Finance': '金融',
+  'Manufacturing': '制造',
+  'Labor': '劳动力',
+  'Research': '科研',
+  'History': '历史',
+  'Geography': '地理',
+  'Law': '法律',
+  'Trade': '贸易',
+  'Innovation': '创新',
+  'Governance': '治理',
+  'Media': '媒体'
+};
+
 export enum ComparisonCategory {
   ECONOMY = 'Economy',
   TECHNOLOGY = 'Technology',
