@@ -7,7 +7,7 @@ import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
 import LoginModal from './components/LoginModal';
 import EditModal from './components/EditModal';
-import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight } from 'lucide-react';
+import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home } from 'lucide-react';
 
 const App: React.FC = () => {
   // Hardcoded to Chinese for this version as requested
@@ -59,6 +59,7 @@ const App: React.FC = () => {
     deleteSuccess: '删除成功',
     deleteFail: '删除失败',
     showMore: '查看全部',
+    backHome: '返回主页',
   };
 
   useEffect(() => {
@@ -358,13 +359,17 @@ const App: React.FC = () => {
       
       <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-72 bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`}>
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <a href="https://uc.324893.xyz/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                 <div className="p-2 bg-indigo-600 rounded-lg"><Globe className="w-6 h-6 text-white" /></div>
                 <span className="text-xl font-bold tracking-tight text-white">{t.title}</span>
-            </div>
+            </a>
         </div>
         
-        <div className="p-4">
+        <div className="p-4 space-y-2">
+            <a href="https://www.324893.xyz/" className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-left text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700/50">
+                <Home className="w-5 h-5 text-indigo-400" /> 
+                <span className="truncate flex-1">{t.backHome}</span>
+            </a>
             <button onClick={() => openArchive('all')} className="w-full flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-semibold transition-all text-left text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 shadow-lg"><Database className="w-5 h-5 text-emerald-400" /> <span className="truncate flex-1">{t.cloudLibrary}</span></button>
         </div>
 
@@ -482,7 +487,9 @@ const App: React.FC = () => {
       </aside>
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         <header className="lg:hidden h-16 border-b border-slate-800 flex items-center px-4 justify-between bg-slate-900/90 backdrop-blur">
-          <div className="flex items-center gap-2"><Globe className="w-6 h-6 text-indigo-500" /><span className="font-bold">{t.title}</span></div>
+          <a href="https://uc.324893.xyz/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Globe className="w-6 h-6 text-indigo-500" /><span className="font-bold">{t.title}</span>
+          </a>
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-400">{isSidebarOpen ? <X /> : <Menu />}</button>
         </header>
         <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
