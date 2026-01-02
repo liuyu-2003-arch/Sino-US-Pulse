@@ -9,6 +9,24 @@ import LoginModal from './components/LoginModal';
 import EditModal from './components/EditModal';
 import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List, LayoutGrid, Calendar, Plus, Filter } from 'lucide-react';
 
+// Helper for category translation
+const categoryMap: Record<string, string> = {
+  'Economy': '经济',
+  'Technology': '科技',
+  'Demographics': '人口',
+  'Military': '军事',
+  'Environment': '环境',
+  'Education': '教育',
+  'Custom': '其他',
+  'Culture': '文化',
+  'Health': '健康',
+  'Society': '社会',
+  'Politics': '政治',
+  'Infrastructure': '基建'
+};
+
+const getCategoryLabel = (cat: string) => categoryMap[cat] || cat;
+
 const App: React.FC = () => {
   // Hardcoded to Chinese for this version as requested
   const language = 'zh';
@@ -383,10 +401,6 @@ const App: React.FC = () => {
         </div>
         
         <div className="p-4 space-y-2">
-            <button onClick={goHome} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-left text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700/50">
-                <Home className="w-5 h-5 text-indigo-400" /> 
-                <span className="truncate flex-1">{t.backHome}</span>
-            </button>
             <button onClick={() => openArchive('all')} className="w-full flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-semibold transition-all text-left text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 shadow-lg">
                 <Database className="w-5 h-5 text-emerald-400" /> 
                 <span className="truncate flex-1">{isAdmin ? t.cloudLibraryAdmin : t.cloudLibraryGuest}</span>
@@ -493,7 +507,11 @@ const App: React.FC = () => {
                     {t.login}
                 </button>
             )}
-            <div className="mt-4 text-[10px] text-slate-600 text-center uppercase tracking-widest">{t.poweredBy}</div>
+            <div className="mt-4 text-center">
+                <a href="https://324893.xyz" target="_blank" rel="noopener noreferrer" className="text-[10px] text-slate-600 hover:text-indigo-400 uppercase tracking-widest transition-colors">
+                    324893.xyz
+                </a>
+            </div>
         </div>
       </aside>
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
@@ -536,7 +554,7 @@ const App: React.FC = () => {
                                     : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200'
                                 }`}
                             >
-                                {cat === 'All' ? t.all : cat}
+                                {cat === 'All' ? t.all : getCategoryLabel(cat)}
                             </button>
                         ))}
                     </div>
@@ -572,7 +590,7 @@ const App: React.FC = () => {
                                 >
                                     <div className="flex justify-between items-start mb-3 relative z-10">
                                         <div className="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase rounded tracking-wider">
-                                            {item.category || 'Custom'}
+                                            {getCategoryLabel(item.category || 'Custom')}
                                         </div>
                                         {isFav && <Star className="w-4 h-4 text-amber-500/50 fill-current" />}
                                     </div>
