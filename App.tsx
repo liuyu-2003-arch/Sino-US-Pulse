@@ -297,9 +297,11 @@ const App: React.FC = () => {
 
   const handleDelete = async () => {
       if (!data || !activeItemKey) return;
-      if (!window.confirm("确定要删除当前对比吗？此操作不可恢复。")) return;
-
+      // Removed confirmation per request
+      
       try {
+          // Close modal first if open (though logic handles this by unmounting)
+          setIsEditOpen(false);
           await deleteComparison(activeItemKey);
           await loadLibraryAndFavorites();
           goHome();
@@ -454,6 +456,7 @@ const App: React.FC = () => {
             onClose={() => setIsEditOpen(false)}
             data={data}
             onSave={handleEditSave}
+            onDelete={handleDelete}
           />
       )}
 
@@ -731,7 +734,7 @@ const App: React.FC = () => {
                             isLoading={loading} 
                             syncState={syncState} 
                             isAdmin={isAdmin}
-                            onDelete={handleDelete}
+                            onDelete={handleDelete} // Removed from ChartSection but function still exists if needed
                             onEdit={() => setIsEditOpen(true)}
                             isFavorite={user && activeItemKey ? favoriteKeys.includes(activeItemKey) : false}
                             onToggleFavorite={handleToggleFavorite}

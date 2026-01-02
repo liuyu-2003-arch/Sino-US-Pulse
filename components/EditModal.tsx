@@ -1,16 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { ComparisonResponse, CATEGORY_MAP } from '../types';
-import { X, Save, Edit3, Loader2 } from 'lucide-react';
+import { X, Save, Edit3, Loader2, Trash2 } from 'lucide-react';
 
 interface EditModalProps {
   isOpen: boolean;
   onClose: () => void;
   data: ComparisonResponse;
   onSave: (updatedData: ComparisonResponse) => Promise<void>;
+  onDelete: () => void;
 }
 
-const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave }) => {
+const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, onDelete }) => {
   const [formData, setFormData] = useState<ComparisonResponse>(data);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -44,13 +45,6 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      {/* 
-         Changed layout:
-         1. max-h-[90vh]: Limits height to viewport
-         2. flex flex-col: vertical layout
-         3. header/footer are direct children (shrink-0)
-         4. middle content is flex-1 overflow-y-auto (scrolls independently)
-      */}
       <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header - Fixed at top */}
@@ -94,7 +88,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave }) 
 
             <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-400">分类 (Category)</label>
-                {/* Replaced Input+Select with Datalist Input for better UX */}
+                {/* Datalist Input for selection + typing */}
                 <input
                     type="text"
                     list="category-options"
@@ -153,22 +147,35 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave }) 
         </div>
 
         {/* Footer - Fixed at bottom */}
-        <div className="p-6 border-t border-slate-800 flex justify-end gap-3 shrink-0 bg-slate-900 rounded-b-2xl">
-            <button 
-                onClick={onClose}
-                disabled={isSaving}
-                className="px-4 py-2 text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+        <div className="p-6 border-t border-slate-800 flex justify-between items-center shrink-0 bg-slate-900 rounded-b-2xl">
+            {/* Left: Delete Button */}
+            <button
+                onClick={onDelete}
+                className="flex items-center gap-2 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-sm font-medium"
+                title="删除此对比 (Delete)"
             >
-                取消
+                <Trash2 className="w-4 h-4" />
+                删除对比
             </button>
-            <button 
-                onClick={handleSave}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium transition-colors disabled:bg-indigo-600/50"
-            >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                保存更改
-            </button>
+
+            {/* Right: Actions */}
+            <div className="flex gap-3">
+                <button 
+                    onClick={onClose}
+                    disabled={isSaving}
+                    className="px-4 py-2 text-slate-400 hover:text-white transition-colors disabled:opacity-50 text-sm font-medium"
+                >
+                    取消
+                </button>
+                <button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors disabled:bg-indigo-600/50 shadow-lg shadow-indigo-500/20"
+                >
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    保存更改
+                </button>
+            </div>
         </div>
       </div>
     </div>

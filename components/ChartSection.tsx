@@ -19,7 +19,7 @@ interface ChartSectionProps {
   isLoading?: boolean;
   syncState: 'idle' | 'syncing' | 'success' | 'error';
   isAdmin: boolean;
-  onDelete: () => void;
+  onDelete: () => void; // Kept in interface to minimize breaking changes in parent, though unused here
   onEdit: () => void;
   isFavorite: boolean;
   onToggleFavorite: () => void;
@@ -210,7 +210,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({
              {isCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
           </button>
 
-          {/* Admin Only Actions: Refresh, Edit, Delete */}
+          {/* Admin Only Actions: Refresh, Edit */}
           {isAdmin && (
             <>
              <button
@@ -228,13 +228,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({
                 title="编辑内容 (管理员)"
              >
                 <Pencil className="w-4 h-4" />
-             </button>
-             <button
-                onClick={onDelete}
-                className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ml-1 hidden md:block"
-                title="删除 (管理员)"
-             >
-                <Trash2 className="w-4 h-4" />
              </button>
             </>
           )}
