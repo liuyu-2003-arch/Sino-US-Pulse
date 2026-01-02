@@ -172,17 +172,20 @@ const ChartSection: React.FC<ChartSectionProps> = ({
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-start md:items-center mb-4 gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-             <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider border ${getCategoryStyle(data.category || 'Custom')}`}>
-                {getCategoryLabel(data.category || 'Custom')}
-             </span>
-          </div>
           <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight">
             {data.titleZh || data.titleEn}
           </h2>
         </div>
         <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
            
+          {/* Category Label Moved Here - Right Side */}
+          <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md tracking-wider border ${getCategoryStyle(data.category || 'Custom')}`}>
+             {getCategoryLabel(data.category || 'Custom')}
+          </span>
+
+          {/* Separator */}
+          <div className="h-4 w-px bg-slate-700 mx-1"></div>
+
           {/* Unified Status Badge */}
           {renderStatusBadge()}
 

@@ -94,17 +94,21 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave }) 
 
             <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-400">分类 (Category)</label>
-                <select
-                    value={formData.category || 'Custom'}
+                {/* Replaced Input+Select with Datalist Input for better UX */}
+                <input
+                    type="text"
+                    list="category-options"
+                    value={formData.category || ''}
                     onChange={(e) => handleChange('category', e.target.value)}
+                    placeholder="输入分类名称或从列表中选择..."
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
-                >
+                />
+                <datalist id="category-options">
                     {Object.entries(CATEGORY_MAP).sort((a, b) => a[1].localeCompare(b[1], 'zh')).map(([key, label]) => (
-                        <option key={key} value={key}>
-                            {label} ({key})
-                        </option>
+                        <option key={key} value={key}>{label} ({key})</option>
                     ))}
-                </select>
+                </datalist>
+                <p className="text-xs text-slate-500">提示: 选择预设分类可获得对应颜色标签；自定义分类将使用默认颜色。</p>
             </div>
 
             <div className="space-y-2">
