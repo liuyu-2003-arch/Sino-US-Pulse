@@ -139,7 +139,7 @@ const App: React.FC = () => {
         setData(null);
     }
 
-    // Update URL
+    // Update URL to show query immediately for feedback
     if (typeof window !== 'undefined') {
         try {
             const url = new URL(window.location.href);
@@ -161,17 +161,38 @@ const App: React.FC = () => {
       const { data, uploadPromise } = await fetchComparisonData(query, language, forceRefresh, isAdmin);
       setData(data);
       
-      // We set active item key if we can find it in the library logic, 
-      // but if it's new it won't have a key immediately until we refetch library.
+      // Calculate the persistent key for this data
       const safeTitle = (data.titleEn || data.title || 'untitled').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-      const derivedKey = `sino-pulse/v1/${safeTitle}.json`;
+      // Fallback if regex strips everything
+      const finalSafeTitle = safeTitle.length > 0 ? safeTitle : `comparison_${Date.now()}`;
+      const derivedKey = `sino-pulse/v1/${finalSafeTitle}.json`;
       setActiveItemKey(derivedKey);
 
-      if (data.source === 'api' && uploadPromise) {
+      // Function to update URL to use the permanent KEY instead of temporary Query
+      const updateUrlToKey = () => {
+         if (typeof window !== 'undefined') {
+            try {
+                const url = new URL(window.location.href);
+                // Only replace if we are currently using the 'q' param (user hasn't navigated away)
+                if (url.searchParams.has('q')) {
+                    url.searchParams.delete('q');
+                    url.searchParams.set('key', derivedKey);
+                    window.history.replaceState({}, '', url.toString());
+                }
+            } catch (e) { console.warn("URL key update failed", e); }
+         }
+      };
+
+      if (data.source === 'r2') {
+          // If data was loaded from cache, it is already persistent. Switch URL immediately.
+          updateUrlToKey();
+      } else if (data.source === 'api' && uploadPromise) {
           setSyncState('syncing');
           uploadPromise.then(() => {
               setSyncState('success');
               loadLibraryAndFavorites(); // Refresh library
+              // Once synced to R2, it is safe to switch the URL to the permanent key
+              updateUrlToKey();
           }).catch(() => setSyncState('error'));
       }
     } catch (err: any) {

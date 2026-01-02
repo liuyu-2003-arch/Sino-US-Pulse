@@ -116,6 +116,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({
   }, [data.yAxisLabel]);
 
   const handleShare = () => {
+    // Only copy if not syncing to avoid copying temporary links
+    if (syncState === 'syncing') return;
+
     navigator.clipboard.writeText(window.location.href).then(() => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
@@ -163,8 +166,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({
           {/* Share Button */}
           <button
             onClick={handleShare}
-            className={`p-2 rounded-lg transition-colors ml-1 ${isCopied ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-800'}`}
-            title="分享页面链接"
+            disabled={syncState === 'syncing'}
+            className={`p-2 rounded-lg transition-colors ml-1 ${isCopied ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-800'} ${syncState === 'syncing' ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={syncState === 'syncing' ? "正在生成链接..." : "分享页面链接"}
           >
              {isCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
           </button>
