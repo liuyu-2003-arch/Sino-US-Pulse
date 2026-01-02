@@ -554,11 +554,6 @@ const App: React.FC = () => {
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-400">{isSidebarOpen ? <X /> : <Menu />}</button>
         </header>
 
-        {/* Desktop Header */}
-        <header className="hidden lg:flex items-center justify-end px-8 py-4 bg-slate-900 border-b border-slate-800 z-20 shrink-0">
-            {renderUserSection(false)}
-        </header>
-
         <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
           {viewMode === 'list' ? (
              <div className="max-w-7xl mx-auto">
@@ -567,15 +562,11 @@ const App: React.FC = () => {
                         <LayoutGrid className="w-6 h-6 text-indigo-400" />
                         {t.homeTitle}
                     </h1>
-                    {isAdmin && (
-                        <button 
-                            onClick={() => openArchive('all')}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>{t.createNewCard}</span>
-                        </button>
-                    )}
+                    
+                    {/* Replaced 'Create New' Button with User Section (Desktop Only) */}
+                    <div className="hidden lg:block">
+                        {renderUserSection(false)}
+                    </div>
                 </div>
 
                 {/* Category Filters */}
