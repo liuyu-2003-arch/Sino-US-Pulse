@@ -120,10 +120,10 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl h-[80vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-800">
+        <div className="flex items-center justify-between p-6 border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-lg ${getBgClass()}`}>
                 {getIcon()}
@@ -139,7 +139,7 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
         </div>
 
         {/* Search Bar */}
-        <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex gap-2">
+        <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex gap-2 shrink-0">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input
@@ -177,12 +177,12 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
         {/* List */}
         <div className="flex-1 overflow-y-auto p-2">
           {isLoading && !externalItems ? (
-            <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-500">
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
               <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
               <p className="text-sm">{t.loading}</p>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-4 text-slate-500 p-6 text-center">
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-500 p-6 text-center">
               {filter.trim() && mode === 'all' ? (
                 <>
                     {isAdmin ? (
