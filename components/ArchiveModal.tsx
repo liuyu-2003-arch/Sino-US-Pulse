@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { SavedComparison } from '../types';
 import { listSavedComparisons } from '../services/geminiService';
@@ -69,8 +70,8 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
   if (mode === 'favorites') {
       baseItems = effectiveItems.filter(item => favoriteKeys.includes(item.key));
   } else if (mode === 'popular') {
-      // Limit to top 10 for popular view
-      baseItems = effectiveItems.slice(0, 10);
+      // Sort by popularity explicitly
+      baseItems = [...effectiveItems].sort((a, b) => (b.favoriteCount || 0) - (a.favoriteCount || 0)).slice(0, 10);
   }
 
   const filteredItems = baseItems.filter(item => {

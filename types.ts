@@ -62,6 +62,42 @@ export const CATEGORY_MAP: Record<string, string> = {
   'Media': '媒体'
 };
 
+// Moved from App.tsx to here for consistency
+export const CATEGORY_COLOR_MAP: Record<string, string> = {
+  'Economy': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  'Finance': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  'Trade': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  'Manufacturing': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+
+  'Technology': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  'Innovation': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  'Science & Society': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  'Research': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+
+  'Military': 'bg-red-500/10 text-red-400 border-red-500/20',
+
+  'Environment': 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+  'Energy': 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+  'Agriculture': 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+
+  'Education': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  'Culture': 'bg-pink-500/10 text-pink-400 border-pink-500/20',
+  'Society': 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  'Demographics': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  'Labor': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+
+  'Diplomacy': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  'International Relations': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  'Politics': 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+  'Governance': 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+  'Law': 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+
+  'Health': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  'Space': 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20',
+  'Transportation': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+  'Infrastructure': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+};
+
 export enum ComparisonCategory {
   ECONOMY = 'Economy',
   TECHNOLOGY = 'Technology',

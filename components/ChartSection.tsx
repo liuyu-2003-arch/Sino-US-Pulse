@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import {
   ComposedChart,
@@ -9,7 +10,7 @@ import {
   ResponsiveContainer,
   Area
 } from 'recharts';
-import { ComparisonResponse } from '../types';
+import { ComparisonResponse, CATEGORY_MAP, CATEGORY_COLOR_MAP } from '../types';
 import { RefreshCw, Database, Trash2, Star, Pencil, Share2, Check, CloudUpload, AlertTriangle } from 'lucide-react';
 
 interface ChartSectionProps {
@@ -53,6 +54,9 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
   }
   return null;
 };
+
+const getCategoryLabel = (cat: string) => CATEGORY_MAP[cat] || cat;
+const getCategoryStyle = (cat: string) => CATEGORY_COLOR_MAP[cat] || 'bg-slate-700/50 text-slate-400 border-slate-600/50';
 
 const ChartSection: React.FC<ChartSectionProps> = ({ 
     data, onRefresh, isLoading, syncState, 
@@ -166,18 +170,23 @@ const ChartSection: React.FC<ChartSectionProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center mb-2">
-        <div className="flex-1 min-w-0 mr-4">
-          <h2 className="text-xl font-bold text-white tracking-tight truncate">
+      <div className="flex justify-between items-start md:items-center mb-4 gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+             <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider border ${getCategoryStyle(data.category || 'Custom')}`}>
+                {getCategoryLabel(data.category || 'Custom')}
+             </span>
+          </div>
+          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight">
             {data.titleZh || data.titleEn}
           </h2>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
            
           {/* Unified Status Badge */}
           {renderStatusBadge()}
 
-          <div className="h-6 w-px bg-slate-700 mx-1"></div>
+          <div className="h-6 w-px bg-slate-700 mx-1 hidden md:block"></div>
 
           {/* Favorite Button */}
           <button
@@ -204,7 +213,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({
              <button
                 onClick={onRefresh}
                 disabled={isLoading}
-                className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors disabled:opacity-50 ml-1"
+                className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors disabled:opacity-50 ml-1 hidden md:block"
                 title="刷新数据 (管理员)"
              >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -219,7 +228,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({
              </button>
              <button
                 onClick={onDelete}
-                className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ml-1"
+                className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ml-1 hidden md:block"
                 title="删除 (管理员)"
              >
                 <Trash2 className="w-4 h-4" />

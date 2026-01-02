@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchComparisonData, fetchSavedComparisonByKey, listSavedComparisons, deleteComparison, saveEditedComparison } from './services/geminiService';
 import { supabase, isUserAdmin, signOut, getFavorites, addFavorite, removeFavorite, getGlobalFavoriteCounts } from './services/supabase';
-import { ComparisonResponse, SavedComparison, CATEGORY_MAP } from './types';
+import { ComparisonResponse, SavedComparison, CATEGORY_MAP, CATEGORY_COLOR_MAP } from './types';
 import ChartSection from './components/ChartSection';
 import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
@@ -10,44 +10,7 @@ import EditModal from './components/EditModal';
 import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List, LayoutGrid, Calendar, Plus, Filter, Flame, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const getCategoryLabel = (cat: string) => CATEGORY_MAP[cat] || cat;
-
-// Color mapping for categories
-const categoryColorMap: Record<string, string> = {
-  'Economy': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  'Finance': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  'Trade': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  'Manufacturing': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-
-  'Technology': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  'Innovation': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  'Science & Society': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  'Research': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-
-  'Military': 'bg-red-500/10 text-red-400 border-red-500/20',
-
-  'Environment': 'bg-teal-500/10 text-teal-400 border-teal-500/20',
-  'Energy': 'bg-teal-500/10 text-teal-400 border-teal-500/20',
-  'Agriculture': 'bg-teal-500/10 text-teal-400 border-teal-500/20',
-
-  'Education': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  'Culture': 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-  'Society': 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-  'Demographics': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-  'Labor': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-
-  'Diplomacy': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  'International Relations': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  'Politics': 'bg-violet-500/10 text-violet-400 border-violet-500/20',
-  'Governance': 'bg-violet-500/10 text-violet-400 border-violet-500/20',
-  'Law': 'bg-violet-500/10 text-violet-400 border-violet-500/20',
-
-  'Health': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-  'Space': 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20',
-  'Transportation': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-  'Infrastructure': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-};
-
-const getCategoryStyle = (cat: string) => categoryColorMap[cat] || 'bg-slate-700/50 text-slate-400 border-slate-600/50';
+const getCategoryStyle = (cat: string) => CATEGORY_COLOR_MAP[cat] || 'bg-slate-700/50 text-slate-400 border-slate-600/50';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -88,7 +51,7 @@ const App: React.FC = () => {
   const t = {
     title: '中美脉搏',
     favoritesTitle: '我的收藏',
-    latestTitle: '热门对比 Top 10', // Changed from All/Latest to Popular
+    latestTitle: '最近更新', // Changed to Recent Updates
     noItems: '暂无收藏',
     noItemsGuest: '登录以收藏对比',
     poweredBy: '由 Gemini 3 Pro 驱动',
@@ -146,10 +109,8 @@ const App: React.FC = () => {
           favoriteCount: globalCounts[item.key] || 0
       }));
 
-      // Sort: High Popularity First, then Recent Date
+      // Sort: Recent Date First (Newest at top)
       itemsWithCounts.sort((a, b) => {
-          const diff = (b.favoriteCount || 0) - (a.favoriteCount || 0);
-          if (diff !== 0) return diff;
           return (b.lastModified?.getTime() || 0) - (a.lastModified?.getTime() || 0);
       });
 
@@ -551,9 +512,9 @@ const App: React.FC = () => {
             )}
           </div>
 
-          {/* Popular (formerly Latest) Items Section */}
+          {/* Recent Updates (formerly Latest) Items Section */}
           <div className="pt-4 border-t border-slate-800/50">
-            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-4 px-2 flex justify-between items-center">{t.latestTitle} <Flame className="w-3 h-3 text-slate-600" /></h3>
+            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-4 px-2 flex justify-between items-center">{t.latestTitle} <Clock className="w-3 h-3 text-slate-600" /></h3>
             
             {isLibraryLoading && allLibraryItems.length === 0 ? (
                  <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-slate-600" /></div>
@@ -581,7 +542,7 @@ const App: React.FC = () => {
                     })}
                     {allLibraryItems.length > 3 && (
                         <button 
-                            onClick={() => openArchive('popular')}
+                            onClick={() => openArchive('all')}
                             className="w-full flex items-center gap-2 mt-1 px-3 py-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors group"
                         >
                             <span>{t.showMore}</span>
@@ -674,7 +635,7 @@ const App: React.FC = () => {
                             </div>
                         ) : (
                             <>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+                                <div className="flex flex-col gap-4 mb-8">
                                     {paginatedItems.map(item => {
                                         const displayTitle = item.titleZh || item.titleEn || item.filename;
                                         const cleanTitle = displayTitle.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
@@ -684,41 +645,42 @@ const App: React.FC = () => {
                                             <div 
                                                 key={item.key}
                                                 onClick={() => loadSavedItem(item.key)}
-                                                className="group bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-indigo-500/50 rounded-xl p-5 cursor-pointer transition-all hover:shadow-xl hover:shadow-indigo-900/10 flex flex-col h-full relative overflow-hidden"
+                                                className="group bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-indigo-500/50 rounded-xl p-5 md:p-6 cursor-pointer transition-all hover:shadow-xl hover:shadow-indigo-900/10 flex flex-col md:flex-row items-start md:items-center gap-4 relative overflow-hidden"
                                             >
-                                                <div className="flex justify-between items-start mb-2 relative z-10">
-                                                    <h3 className="text-lg font-bold text-slate-200 group-hover:text-white leading-snug line-clamp-2">
+                                                {/* Left Content: Title and Meta */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2.5 mb-2">
+                                                        <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider border ${getCategoryStyle(item.category || 'Custom')}`}>
+                                                            {getCategoryLabel(item.category || 'Custom')}
+                                                        </span>
+                                                        <span className="flex items-center gap-1 text-[10px] text-slate-500">
+                                                            <Calendar className="w-3 h-3" />
+                                                            {item.lastModified?.toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+
+                                                    <h3 className="text-lg md:text-xl font-bold text-slate-200 group-hover:text-white leading-snug mb-3">
                                                         {cleanTitle}
                                                     </h3>
-                                                    {isFav && <Star className="w-4 h-4 text-amber-500/50 fill-current shrink-0 ml-2 mt-1" />}
-                                                </div>
-                                                
-                                                {/* Summary Section - Added */}
-                                                <div className="mb-4 flex-1 relative z-10">
-                                                    {item.summary ? (
-                                                        <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
+
+                                                    {/* Summary - Prominent display */}
+                                                    {item.summary && (
+                                                        <p className="text-sm text-slate-400 leading-relaxed max-w-4xl line-clamp-2 md:line-clamp-2">
                                                             {item.summary}
-                                                        </p>
-                                                    ) : (
-                                                        <p className="text-xs text-slate-600 italic mt-1">
-                                                            点击查看详细对比分析...
                                                         </p>
                                                     )}
                                                 </div>
-                                                
-                                                <div className="mt-auto flex items-center justify-between relative z-10 pt-3 border-t border-slate-700/30">
-                                                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                        <Calendar className="w-3.5 h-3.5" />
-                                                        <span>{t.lastUpdated} {item.lastModified?.toLocaleDateString()}</span>
-                                                    </div>
-                                                    
-                                                    <div className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md tracking-wider border ${getCategoryStyle(item.category || 'Custom')}`}>
-                                                        {getCategoryLabel(item.category || 'Custom')}
-                                                    </div>
+
+                                                {/* Right Action/Status */}
+                                                <div className="flex items-center gap-4 md:pl-6 md:border-l border-slate-700/50 shrink-0 self-end md:self-center">
+                                                     {isFav && <Star className="w-5 h-5 text-amber-500 fill-current" />}
+                                                     <div className="p-2 rounded-full bg-slate-700/30 group-hover:bg-indigo-600 group-hover:text-white transition-colors text-slate-500">
+                                                        <ArrowRight className="w-5 h-5" />
+                                                     </div>
                                                 </div>
                                                 
                                                 {/* Subtle hover effect background */}
-                                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 via-indigo-500/0 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                             </div>
                                         );
                                     })}
