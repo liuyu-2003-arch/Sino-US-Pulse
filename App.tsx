@@ -258,6 +258,13 @@ const App: React.FC = () => {
           setSyncState('syncing');
           uploadPromise.then(() => {
               setSyncState('success');
+              // Update local data source to r2 so UI shows "Archived"
+              setData(prev => {
+                  if (prev && prev.titleEn === data.titleEn) {
+                      return { ...prev, source: 'r2' };
+                  }
+                  return prev;
+              });
               loadLibraryAndFavorites(); 
               updateUrlToKey();
           }).catch(() => setSyncState('error'));

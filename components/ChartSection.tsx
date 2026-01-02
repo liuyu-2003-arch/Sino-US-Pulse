@@ -10,7 +10,7 @@ import {
   Area
 } from 'recharts';
 import { ComparisonResponse } from '../types';
-import { RefreshCw, Database, Trash2, Star, Pencil, Share2, Check } from 'lucide-react';
+import { RefreshCw, Database, Trash2, Star, Pencil, Share2, Check, CloudUpload, AlertTriangle } from 'lucide-react';
 
 interface ChartSectionProps {
   data: ComparisonResponse;
@@ -65,9 +65,10 @@ const ChartSection: React.FC<ChartSectionProps> = ({
     usa: '美国',
     china: '中国',
     ratio: '倍数 (美/中)',
-    sourceR2: '存档',
-    sourceNew: '实时',
-    syncing: '同步中',
+    sourceR2: '已存档',
+    sourceNew: '实时生成',
+    syncing: '云端同步中...',
+    syncError: '同步失败'
   };
 
   const chartData = useMemo(() => {
@@ -125,6 +126,40 @@ const ChartSection: React.FC<ChartSectionProps> = ({
     });
   };
 
+  const renderStatusBadge = () => {
+    if (syncState === 'syncing') {
+        return (
+            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded text-[10px] font-bold border bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                {t.syncing}
+            </div>
+        );
+    }
+    if (syncState === 'error') {
+         return (
+            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded text-[10px] font-bold border bg-red-500/10 text-red-400 border-red-500/20" title="保存到云端失败">
+                <AlertTriangle className="w-3 h-3" />
+                {t.syncError}
+            </div>
+        );
+    }
+    if (data.source === 'r2') {
+         return (
+            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded text-[10px] font-bold border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                <Database className="w-3 h-3" />
+                {t.sourceR2}
+            </div>
+        );
+    }
+    // Default API
+    return (
+        <div className="flex items-center gap-1.5 px-2 py-1.5 rounded text-[10px] font-bold border bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
+             <CloudUpload className="w-3 h-3" />
+             {t.sourceNew}
+        </div>
+    );
+  };
+
   if (!chartData.length) {
       return <div className="h-full flex items-center justify-center text-slate-500 italic text-sm">暂无有效图表数据。</div>;
   }
@@ -138,19 +173,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({
           </h2>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-           {/* Source Badge */}
-          <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded text-[10px] font-bold border ${data.source === 'r2' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}`}>
-            <Database className="w-3 h-3" />
-            {data.source === 'r2' ? t.sourceR2 : t.sourceNew}
-          </div>
-
-          {/* Sync Indicator */}
-          {syncState === 'syncing' && (
-            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-amber-500/10 text-amber-400 rounded text-[10px] font-bold animate-pulse">
-              <RefreshCw className="w-3 h-3 animate-spin" />
-              {t.syncing}
-            </div>
-          )}
+           
+          {/* Unified Status Badge */}
+          {renderStatusBadge()}
 
           <div className="h-6 w-px bg-slate-700 mx-1"></div>
 
