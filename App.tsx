@@ -386,8 +386,8 @@ const App: React.FC = () => {
   const favoriteItems = allLibraryItems.filter(item => favoriteKeys.includes(item.key));
   // Display only 3 items initially
   const displayedFavorites = favoriteItems.slice(0, 3);
-  // Display ALL items for sidebar list
-  const displayedLatest = allLibraryItems;
+  // Display only 3 items initially for sidebar list (Popular)
+  const displayedLatest = allLibraryItems.slice(0, 3);
 
   const renderSkeleton = () => (
     <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
@@ -547,6 +547,15 @@ const App: React.FC = () => {
                             </button>
                         );
                     })}
+                    {allLibraryItems.length > 3 && (
+                        <button 
+                            onClick={() => openArchive('all')}
+                            className="w-full flex items-center gap-2 mt-1 px-3 py-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors group"
+                        >
+                            <span>{t.showMore}</span>
+                            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                        </button>
+                    )}
                 </div>
             )}
           </div>
