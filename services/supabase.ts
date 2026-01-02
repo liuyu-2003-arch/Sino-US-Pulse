@@ -72,6 +72,24 @@ export const getFavorites = async (userId: string): Promise<string[]> => {
     return data.map(item => item.comparison_key);
 };
 
+export const getGlobalFavoriteCounts = async (): Promise<Record<string, number>> => {
+    const { data, error } = await supabase
+        .from('favorites')
+        .select('comparison_key');
+    
+    if (error) {
+        console.error('Error fetching global favorites:', error);
+        return {};
+    }
+
+    const counts: Record<string, number> = {};
+    data?.forEach((item: any) => {
+        const k = item.comparison_key;
+        counts[k] = (counts[k] || 0) + 1;
+    });
+    return counts;
+};
+
 export const addFavorite = async (userId: string, key: string) => {
     const { error } = await supabase
         .from('favorites')

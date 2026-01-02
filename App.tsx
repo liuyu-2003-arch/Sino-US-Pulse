@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchComparisonData, fetchSavedComparisonByKey, listSavedComparisons, deleteComparison, saveEditedComparison } from './services/geminiService';
-import { supabase, isUserAdmin, signOut, getFavorites, addFavorite, removeFavorite } from './services/supabase';
+import { supabase, isUserAdmin, signOut, getFavorites, addFavorite, removeFavorite, getGlobalFavoriteCounts } from './services/supabase';
 import { ComparisonResponse, SavedComparison } from './types';
 import ChartSection from './components/ChartSection';
 import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
 import LoginModal from './components/LoginModal';
 import EditModal from './components/EditModal';
-import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List, LayoutGrid, Calendar, Plus, Filter } from 'lucide-react';
+import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List, LayoutGrid, Calendar, Plus, Filter, Flame } from 'lucide-react';
 
 // Helper for category translation
 const categoryMap: Record<string, string> = {
@@ -84,7 +84,7 @@ const App: React.FC = () => {
   const t = {
     title: '中美脉搏',
     favoritesTitle: '我的收藏',
-    latestTitle: '所有对比',
+    latestTitle: '热门对比', // Changed from All/Latest to Popular
     noItems: '暂无收藏',
     noItemsGuest: '登录以收藏对比',
     poweredBy: '由 Gemini 3 Pro 驱动',
@@ -129,8 +129,26 @@ const App: React.FC = () => {
   const loadLibraryAndFavorites = async () => {
     setIsLibraryLoading(true);
     try {
-      const items = await listSavedComparisons(language);
-      setAllLibraryItems(items);
+      // Parallel fetch items and global favorites
+      const [items, globalCounts] = await Promise.all([
+          listSavedComparisons(language),
+          getGlobalFavoriteCounts()
+      ]);
+
+      // Merge counts
+      const itemsWithCounts = items.map(item => ({
+          ...item,
+          favoriteCount: globalCounts[item.key] || 0
+      }));
+
+      // Sort: High Popularity First, then Recent Date
+      itemsWithCounts.sort((a, b) => {
+          const diff = (b.favoriteCount || 0) - (a.favoriteCount || 0);
+          if (diff !== 0) return diff;
+          return (b.lastModified?.getTime() || 0) - (a.lastModified?.getTime() || 0);
+      });
+
+      setAllLibraryItems(itemsWithCounts);
 
       if (user) {
           const favs = await getFavorites(user.id);
@@ -329,6 +347,8 @@ const App: React.FC = () => {
               await addFavorite(user.id, activeItemKey);
               setFavoriteKeys(prev => [...prev, activeItemKey]);
           }
+          // Refresh list to update popularity immediately
+          loadLibraryAndFavorites();
       } catch (e) {
           console.error("Favorite toggle failed", e);
       }
@@ -497,9 +517,9 @@ const App: React.FC = () => {
             )}
           </div>
 
-          {/* All Items Section */}
+          {/* Popular (formerly Latest) Items Section */}
           <div className="pt-4 border-t border-slate-800/50">
-            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-4 px-2 flex justify-between items-center">{t.latestTitle} <List className="w-3 h-3 text-slate-600" /></h3>
+            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-4 px-2 flex justify-between items-center">{t.latestTitle} <Flame className="w-3 h-3 text-slate-600" /></h3>
             
             {isLibraryLoading && allLibraryItems.length === 0 ? (
                  <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-slate-600" /></div>

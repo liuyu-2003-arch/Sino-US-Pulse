@@ -1,6 +1,4 @@
 
-
-
 export type Language = 'en' | 'zh';
 
 export interface ComparisonDataPoint {
@@ -47,6 +45,7 @@ export interface SavedComparison {
   category?: string;
   lastModified?: Date;
   size?: number;
+  favoriteCount?: number; // Added for popularity sorting
 }
 
 export const PRESET_QUERIES = [
