@@ -7,7 +7,7 @@ import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
 import LoginModal from './components/LoginModal';
 import EditModal from './components/EditModal';
-import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List, LayoutGrid, Calendar, Plus, Filter, Flame } from 'lucide-react';
+import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List, LayoutGrid, Calendar, Plus, Filter, Flame, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Helper for category translation
 const categoryMap: Record<string, string> = {
@@ -86,6 +86,8 @@ const categoryColorMap: Record<string, string> = {
 
 const getCategoryStyle = (cat: string) => categoryColorMap[cat] || 'bg-slate-700/50 text-slate-400 border-slate-600/50';
 
+const ITEMS_PER_PAGE = 12;
+
 const App: React.FC = () => {
   // Hardcoded to Chinese for this version as requested
   const language = 'zh';
@@ -105,8 +107,9 @@ const App: React.FC = () => {
   
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   
-  // Filtering State
+  // Filtering & Pagination State
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [currentPage, setCurrentPage] = useState<number>(1);
   
   // Modal States
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
@@ -422,11 +425,32 @@ const App: React.FC = () => {
     return ['All', ...Array.from(cats).sort()];
   }, [allLibraryItems]);
 
+  // Handle pagination reset when category changes
+  useEffect(() => {
+      setCurrentPage(1);
+  }, [selectedCategory]);
+
   // Derive filtered items for grid
   const filteredLibraryItems = useMemo(() => {
     if (selectedCategory === 'All') return allLibraryItems;
     return allLibraryItems.filter(item => (item.category || 'Custom') === selectedCategory);
   }, [allLibraryItems, selectedCategory]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredLibraryItems.length / ITEMS_PER_PAGE);
+  const paginatedItems = useMemo(() => {
+      const start = (currentPage - 1) * ITEMS_PER_PAGE;
+      return filteredLibraryItems.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredLibraryItems, currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+      if (newPage >= 1 && newPage <= totalPages) {
+          setCurrentPage(newPage);
+          // Scroll to top of grid
+          const gridTop = document.getElementById('grid-container');
+          if (gridTop) gridTop.scrollIntoView({ behavior: 'smooth' });
+      }
+  };
 
   // Derive display list for sidebar
   const favoriteItems = allLibraryItems.filter(item => favoriteKeys.includes(item.key));
@@ -631,7 +655,7 @@ const App: React.FC = () => {
         {viewMode === 'list' ? (
              <div className="flex flex-col h-full overflow-hidden">
                 {/* Fixed Header Section for List View */}
-                <div className="shrink-0 px-4 pt-4 md:px-8 md:pt-8 bg-slate-900 z-10 border-b border-slate-800/30 pb-2">
+                <div id="grid-container" className="shrink-0 px-4 pt-4 md:px-8 md:pt-8 bg-slate-900 z-10 border-b border-slate-800/30 pb-2">
                     <div className="max-w-7xl mx-auto">
                         <div className="flex justify-between items-center mb-6">
                             <h1 className="text-2xl font-bold text-white flex items-center gap-3">
@@ -669,7 +693,7 @@ const App: React.FC = () => {
 
                 {/* Scrollable Content Section for List View */}
                 <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-8 scroll-smooth pt-4">
-                    <div className="max-w-7xl mx-auto">
+                    <div className="max-w-7xl mx-auto flex flex-col min-h-full">
                         {isLibraryLoading && allLibraryItems.length === 0 ? (
                             <div className="flex items-center justify-center h-64">
                                 <Loader2 className="w-8 h-8 animate-spin text-slate-600" />
@@ -686,42 +710,84 @@ const App: React.FC = () => {
                                 </button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {filteredLibraryItems.map(item => {
-                                    const displayTitle = item.titleZh || item.titleEn || item.filename;
-                                    const cleanTitle = displayTitle.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
-                                    const isFav = favoriteKeys.includes(item.key);
-                                    
-                                    return (
-                                        <div 
-                                            key={item.key}
-                                            onClick={() => loadSavedItem(item.key)}
-                                            className="group bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-indigo-500/50 rounded-xl p-5 cursor-pointer transition-all hover:shadow-xl hover:shadow-indigo-900/10 flex flex-col h-full relative overflow-hidden"
-                                        >
-                                            <div className="flex justify-between items-start mb-4 relative z-10">
-                                                <h3 className="text-lg font-bold text-slate-200 group-hover:text-white leading-snug line-clamp-2">
-                                                    {cleanTitle}
-                                                </h3>
-                                                {isFav && <Star className="w-4 h-4 text-amber-500/50 fill-current shrink-0 ml-2 mt-1" />}
-                                            </div>
-                                            
-                                            <div className="mt-auto flex items-center justify-between relative z-10">
-                                                <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                    <Calendar className="w-3.5 h-3.5" />
-                                                    <span>{t.lastUpdated} {item.lastModified?.toLocaleDateString()}</span>
+                            <>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+                                    {paginatedItems.map(item => {
+                                        const displayTitle = item.titleZh || item.titleEn || item.filename;
+                                        const cleanTitle = displayTitle.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
+                                        const isFav = favoriteKeys.includes(item.key);
+                                        
+                                        return (
+                                            <div 
+                                                key={item.key}
+                                                onClick={() => loadSavedItem(item.key)}
+                                                className="group bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-indigo-500/50 rounded-xl p-5 cursor-pointer transition-all hover:shadow-xl hover:shadow-indigo-900/10 flex flex-col h-full relative overflow-hidden"
+                                            >
+                                                <div className="flex justify-between items-start mb-2 relative z-10">
+                                                    <h3 className="text-lg font-bold text-slate-200 group-hover:text-white leading-snug line-clamp-2">
+                                                        {cleanTitle}
+                                                    </h3>
+                                                    {isFav && <Star className="w-4 h-4 text-amber-500/50 fill-current shrink-0 ml-2 mt-1" />}
                                                 </div>
                                                 
-                                                <div className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md tracking-wider border ${getCategoryStyle(item.category || 'Custom')}`}>
-                                                    {getCategoryLabel(item.category || 'Custom')}
+                                                {/* Summary Section - Added */}
+                                                <div className="mb-4 flex-1 relative z-10">
+                                                    {item.summary ? (
+                                                        <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
+                                                            {item.summary}
+                                                        </p>
+                                                    ) : (
+                                                        <p className="text-xs text-slate-600 italic mt-1">
+                                                            点击查看详细对比分析...
+                                                        </p>
+                                                    )}
                                                 </div>
+                                                
+                                                <div className="mt-auto flex items-center justify-between relative z-10 pt-3 border-t border-slate-700/30">
+                                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                        <Calendar className="w-3.5 h-3.5" />
+                                                        <span>{t.lastUpdated} {item.lastModified?.toLocaleDateString()}</span>
+                                                    </div>
+                                                    
+                                                    <div className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md tracking-wider border ${getCategoryStyle(item.category || 'Custom')}`}>
+                                                        {getCategoryLabel(item.category || 'Custom')}
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Subtle hover effect background */}
+                                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 via-indigo-500/0 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                             </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Pagination Controls */}
+                                {totalPages > 1 && (
+                                    <div className="mt-auto flex justify-center pb-8">
+                                        <div className="flex items-center gap-2 bg-slate-800 p-1.5 rounded-xl border border-slate-700 shadow-lg">
+                                            <button
+                                                onClick={() => handlePageChange(currentPage - 1)}
+                                                disabled={currentPage === 1}
+                                                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                                            >
+                                                <ChevronLeft className="w-5 h-5" />
+                                            </button>
                                             
-                                            {/* Subtle hover effect background */}
-                                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 via-indigo-500/0 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <span className="text-sm font-medium text-slate-300 px-3 min-w-[80px] text-center">
+                                                Page {currentPage} / {totalPages}
+                                            </span>
+
+                                            <button
+                                                onClick={() => handlePageChange(currentPage + 1)}
+                                                disabled={currentPage === totalPages}
+                                                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                                            >
+                                                <ChevronRight className="w-5 h-5" />
+                                            </button>
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

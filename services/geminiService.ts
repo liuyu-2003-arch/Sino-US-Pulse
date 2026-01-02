@@ -45,6 +45,7 @@ interface LibraryIndexItem {
     key: string;
     titleZh: string;
     titleEn: string;
+    summary?: string; // Added summary to index
     category: string;
     lastModified: string;
 }
@@ -150,6 +151,7 @@ export const listSavedComparisons = async (language: Language): Promise<SavedCom
         filename: item.key.split('/').pop() || item.key,
         titleEn: item.titleEn,
         titleZh: item.titleZh,
+        summary: item.summary,
         category: item.category,
         lastModified: new Date(item.lastModified)
     })).sort((a, b) => (b.lastModified?.getTime() || 0) - (a.lastModified?.getTime() || 0));
@@ -190,6 +192,7 @@ export const saveEditedComparison = async (key: string, data: ComparisonResponse
             key,
             titleEn: data.titleEn || data.title,
             titleZh: data.titleZh || data.title,
+            summary: data.summary, // Pass summary
             category: data.category || 'Custom',
             lastModified: new Date().toISOString()
         });
@@ -207,7 +210,7 @@ const responseSchema = {
         titleZh: { type: Type.STRING, description: "Clean Chinese title, no meta-commentary." },
         category: { type: Type.STRING },
         yAxisLabel: { type: Type.STRING, description: "Concise unit label (e.g. 'Billions USD'). No notes." },
-        summary: { type: Type.STRING },
+        summary: { type: Type.STRING, description: "A concise 1-2 sentence summary of the trend." },
         detailedAnalysis: { type: Type.STRING },
         futureOutlook: { type: Type.STRING },
         data: {
@@ -271,6 +274,7 @@ export const fetchComparisonData = async (
         3. Response language: ${langName}.
         4. Data values MUST be numbers, not strings.
         5. yAxisLabel MUST be very short and clean (e.g. "Billions USD", "Percentage", "Tons"). DO NOT include notes, projections disclaimer, or text in brackets [].
+        6. Summary MUST be a concise overview (max 100 words).
     `;
 
     const response = await ai.models.generateContent({
@@ -297,6 +301,7 @@ export const fetchComparisonData = async (
                 key,
                 titleEn: data.titleEn || data.title,
                 titleZh: data.titleZh || data.title,
+                summary: data.summary, // Pass summary
                 category: data.category || 'Custom',
                 lastModified: new Date().toISOString()
             });

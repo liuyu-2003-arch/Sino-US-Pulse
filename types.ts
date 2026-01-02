@@ -42,6 +42,7 @@ export interface SavedComparison {
   displayName?: string; // Legacy fallback
   titleZh?: string;     // New: Chinese Title
   titleEn?: string;     // New: English Title
+  summary?: string;     // New: Summary for card preview
   category?: string;
   lastModified?: Date;
   size?: number;
