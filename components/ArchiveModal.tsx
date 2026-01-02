@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { SavedComparison } from '../types';
 import { listSavedComparisons } from '../services/geminiService';
-import { X, Calendar, Database, Search, Loader2, Plus, Lock, Star } from 'lucide-react';
+import { X, Calendar, Database, Search, Loader2, Plus, Lock, Star, Flame } from 'lucide-react';
 
 interface ArchiveModalProps {
   isOpen: boolean;
@@ -10,21 +9,26 @@ interface ArchiveModalProps {
   onSelect: (key: string) => void;
   onCreate: (query: string) => void;
   isAdmin: boolean;
-  mode?: 'all' | 'favorites'; // New prop to control display mode
-  favoriteKeys?: string[];    // New prop for filtering favorites
+  mode?: 'all' | 'favorites' | 'popular'; 
+  favoriteKeys?: string[];    
+  items?: SavedComparison[]; 
 }
 
 const ArchiveModal: React.FC<ArchiveModalProps> = ({ 
     isOpen, onClose, onSelect, onCreate, isAdmin, 
-    mode = 'all', favoriteKeys = [] 
+    mode = 'all', favoriteKeys = [], items: externalItems 
 }) => {
-  const [items, setItems] = useState<SavedComparison[]>([]);
+  const [internalItems, setInternalItems] = useState<SavedComparison[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState('');
+
+  // Use externally provided items if available, otherwise use internally fetched ones
+  const effectiveItems = externalItems || internalItems;
 
   const t = {
     titleAll: '云端资料库',
     titleFav: '我的收藏',
+    titlePopular: '热门对比 Top 10',
     searchPlaceholder: '搜索...',
     empty: '暂无匹配记录',
     loading: '正在加载列表...',
@@ -36,16 +40,16 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !externalItems) {
       loadItems();
     }
-  }, [isOpen]);
+  }, [isOpen, externalItems]);
 
   const loadItems = async () => {
     setIsLoading(true);
     try {
       const data = await listSavedComparisons('zh');
-      setItems(data);
+      setInternalItems(data);
     } catch (error) {
       console.error("Failed to load archive", error);
     } finally {
@@ -61,9 +65,13 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
   };
 
   // Base list depending on mode
-  const baseItems = mode === 'favorites' 
-      ? items.filter(item => favoriteKeys.includes(item.key)) 
-      : items;
+  let baseItems = effectiveItems;
+  if (mode === 'favorites') {
+      baseItems = effectiveItems.filter(item => favoriteKeys.includes(item.key));
+  } else if (mode === 'popular') {
+      // Limit to top 10 for popular view
+      baseItems = effectiveItems.slice(0, 10);
+  }
 
   const filteredItems = baseItems.filter(item => {
     const term = filter.toLowerCase().trim();
@@ -90,6 +98,24 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
       }
   };
 
+  const getTitle = () => {
+      if (mode === 'favorites') return t.titleFav;
+      if (mode === 'popular') return t.titlePopular;
+      return t.titleAll;
+  };
+
+  const getIcon = () => {
+      if (mode === 'favorites') return <Star className="w-5 h-5 text-amber-400 fill-current" />;
+      if (mode === 'popular') return <Flame className="w-5 h-5 text-orange-500 fill-current" />;
+      return <Database className="w-5 h-5 text-indigo-400" />;
+  };
+
+  const getBgClass = () => {
+      if (mode === 'favorites') return 'bg-amber-500/10';
+      if (mode === 'popular') return 'bg-orange-500/10';
+      return 'bg-indigo-500/10';
+  }
+
   if (!isOpen) return null;
 
   return (
@@ -99,14 +125,10 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${mode === 'favorites' ? 'bg-amber-500/10' : 'bg-indigo-500/10'}`}>
-                {mode === 'favorites' ? (
-                    <Star className="w-5 h-5 text-amber-400 fill-current" />
-                ) : (
-                    <Database className="w-5 h-5 text-indigo-400" />
-                )}
+            <div className={`p-2 rounded-lg ${getBgClass()}`}>
+                {getIcon()}
             </div>
-            <h2 className="text-xl font-bold text-white">{mode === 'favorites' ? t.titleFav : t.titleAll}</h2>
+            <h2 className="text-xl font-bold text-white">{getTitle()}</h2>
           </div>
           <button 
             onClick={onClose}
@@ -154,7 +176,7 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
 
         {/* List */}
         <div className="flex-1 overflow-y-auto p-2">
-          {isLoading ? (
+          {isLoading && !externalItems ? (
             <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-500">
               <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
               <p className="text-sm">{t.loading}</p>
@@ -193,6 +215,8 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
                 <>
                     {mode === 'favorites' ? (
                         <Star className="w-12 h-12 opacity-20 text-amber-500" />
+                    ) : mode === 'popular' ? (
+                        <Flame className="w-12 h-12 opacity-20 text-orange-500" />
                     ) : (
                         <Database className="w-12 h-12 opacity-20" />
                     )}
@@ -202,20 +226,33 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
             </div>
           ) : (
             <div className="grid gap-2">
-              {filteredItems.map((item) => (
+              {filteredItems.map((item, index) => (
                 <div
                   key={item.key}
                   onClick={() => onSelect(item.key)}
                   className="flex items-center justify-between p-4 rounded-xl hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all group text-left cursor-pointer"
                 >
                   <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="font-medium text-slate-200 truncate group-hover:text-indigo-400 transition-colors">
-                      {getDisplayTitle(item)}
-                    </h3>
+                     <div className="flex items-center gap-3">
+                        {mode === 'popular' && (
+                            <span className={`text-xs font-bold w-5 h-5 flex items-center justify-center rounded ${index < 3 ? 'bg-orange-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                                {index + 1}
+                            </span>
+                        )}
+                        <h3 className="font-medium text-slate-200 truncate group-hover:text-indigo-400 transition-colors">
+                            {getDisplayTitle(item)}
+                        </h3>
+                     </div>
                     {item.lastModified && (
-                        <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">
+                        <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 ml-0">
                             <Calendar className="w-3 h-3" />
                             <span>{t.generatedOn} {new Date(item.lastModified).toLocaleDateString()}</span>
+                            {item.favoriteCount !== undefined && item.favoriteCount > 0 && mode === 'popular' && (
+                                <span className="flex items-center gap-1 ml-2 text-orange-400/80">
+                                    <Star className="w-3 h-3 fill-current" />
+                                    {item.favoriteCount}
+                                </span>
+                            )}
                         </div>
                     )}
                   </div>

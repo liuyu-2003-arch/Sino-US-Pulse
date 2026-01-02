@@ -72,7 +72,7 @@ const App: React.FC = () => {
   
   // Modal States
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
-  const [archiveMode, setArchiveMode] = useState<'all' | 'favorites'>('all');
+  const [archiveMode, setArchiveMode] = useState<'all' | 'favorites' | 'popular'>('all');
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   
@@ -365,7 +365,7 @@ const App: React.FC = () => {
       }
   };
 
-  const openArchive = (mode: 'all' | 'favorites') => {
+  const openArchive = (mode: 'all' | 'favorites' | 'popular') => {
       setArchiveMode(mode);
       setIsArchiveOpen(true);
   };
@@ -446,6 +446,7 @@ const App: React.FC = () => {
         isAdmin={isAdmin}
         mode={archiveMode}
         favoriteKeys={favoriteKeys}
+        items={allLibraryItems}
       />
       
       <LoginModal 
@@ -529,7 +530,6 @@ const App: React.FC = () => {
                 <div className="space-y-1">
                     {displayedLatest.map((item) => {
                         const isActive = activeItemKey === item.key;
-                        const isFav = favoriteKeys.includes(item.key);
                         const displayTitle = item.titleZh || item.titleEn || item.filename;
                         const cleanTitle = displayTitle.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
                         
@@ -543,13 +543,12 @@ const App: React.FC = () => {
                             >
                                 <div className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isActive ? 'bg-indigo-500' : 'bg-slate-700 group-hover:bg-slate-500'}`}></div>
                                 <span className="truncate flex-1">{cleanTitle}</span>
-                                {isFav && <Star className="w-3 h-3 text-amber-500/40 fill-current shrink-0" />}
                             </button>
                         );
                     })}
                     {allLibraryItems.length > 3 && (
                         <button 
-                            onClick={() => openArchive('all')}
+                            onClick={() => openArchive('popular')}
                             className="w-full flex items-center gap-2 mt-1 px-3 py-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors group"
                         >
                             <span>{t.showMore}</span>
