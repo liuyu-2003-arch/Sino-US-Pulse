@@ -126,9 +126,18 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full bg-slate-800 text-slate-200 pl-9 pr-4 py-2.5 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 text-sm placeholder-slate-500"
+              className="w-full bg-slate-800 text-slate-200 pl-9 pr-10 py-2.5 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 text-sm placeholder-slate-500"
               autoFocus
             />
+            {filter && (
+                <button
+                  onClick={() => setFilter('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-200 bg-transparent hover:bg-slate-700/50 rounded-full transition-all"
+                  title="清除搜索"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+            )}
           </div>
           {/* Only show Create button in 'All' mode */}
           {isAdmin && mode === 'all' && (
