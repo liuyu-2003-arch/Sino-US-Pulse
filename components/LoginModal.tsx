@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Github, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { signInWithGoogle, signInWithGithub, signInWithEmail, signUpWithEmail } from '../services/supabase';
@@ -55,8 +54,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
   const t = {
     title: isSignUp ? '注册账户' : '登录账户',
-    google: '使用 Google 登录',
-    github: '使用 GitHub 登录',
+    google: 'Google',
+    github: 'GitHub',
     desc: '管理员可管理数据，注册用户可收藏对比，访客仅可浏览。',
     emailPlaceholder: '邮箱地址',
     passwordPlaceholder: '密码',
@@ -146,11 +145,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={signInWithGoogle}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-white text-slate-900 rounded-xl font-semibold hover:bg-slate-100 transition-colors text-sm"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-slate-900 rounded-xl font-semibold hover:bg-slate-100 transition-colors text-sm"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -164,7 +163,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           <button
             type="button"
             onClick={signInWithGithub}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-[#24292e] text-white rounded-xl font-semibold hover:bg-[#2f363d] transition-colors text-sm"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#24292e] text-white rounded-xl font-semibold hover:bg-[#2f363d] transition-colors text-sm"
           >
             <Github className="w-4 h-4" />
             {t.github}
