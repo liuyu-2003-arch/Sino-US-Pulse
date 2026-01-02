@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchComparisonData, fetchSavedComparisonByKey, listSavedComparisons, deleteComparison, saveEditedComparison } from './services/geminiService';
 import { supabase, isUserAdmin, signOut, getFavorites, addFavorite, removeFavorite, getGlobalFavoriteCounts } from './services/supabase';
@@ -378,6 +379,26 @@ const App: React.FC = () => {
       }
   };
 
+  // Logic to determine Previous and Next items relative to the current active item
+  const { prevItem, nextItem } = useMemo(() => {
+    if (!activeItemKey || allLibraryItems.length === 0) return { prevItem: null, nextItem: null };
+    
+    // Find index of current item in the *full* sorted list
+    // Note: allLibraryItems is sorted Newest -> Oldest (Index 0 is newest)
+    const index = allLibraryItems.findIndex(item => item.key === activeItemKey);
+    
+    if (index === -1) return { prevItem: null, nextItem: null };
+
+    // "Previous" in the list (array index - 1) is physically "above" or "newer"
+    const prev = index > 0 ? allLibraryItems[index - 1] : null;
+    
+    // "Next" in the list (array index + 1) is physically "below" or "older"
+    const next = index < allLibraryItems.length - 1 ? allLibraryItems[index + 1] : null;
+
+    return { prevItem: prev, nextItem: next };
+  }, [activeItemKey, allLibraryItems]);
+
+
   // Derive display list for sidebar
   const favoriteItems = allLibraryItems.filter(item => favoriteKeys.includes(item.key));
   // Display only 3 items initially
@@ -727,19 +748,22 @@ const App: React.FC = () => {
                     {loading && !data ? renderSkeleton() : error ? <div className="flex items-center justify-center h-full text-red-400"><div className="text-center max-w-md"><p className="text-lg font-semibold mb-2">{t.errorTitle}</p><p className="font-mono text-sm bg-red-950/50 border border-red-900/50 px-3 py-2 rounded mb-4 break-words">{error}</p>
                     {error !== t.permissionDenied && <button onClick={() => loadData('GDP (Gross Domestic Product) in USD from 1945 to 2024')} className="mt-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors text-slate-200 font-medium">{t.retry}</button>}
                     {error === t.permissionDenied && !user && <button onClick={() => setIsLoginOpen(true)} className="mt-2 px-4 py-2 bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors text-white font-medium">{t.login}</button>}
-                    </div></div> : data ? <div className="space-y-8"><div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden">
+                    </div></div> : data ? <div className="space-y-8"><div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-auto md:h-[550px] relative overflow-hidden flex flex-col">
                         <ChartSection 
                             data={data} 
                             onRefresh={handleRefresh} 
                             isLoading={loading} 
                             syncState={syncState} 
                             isAdmin={isAdmin}
-                            onDelete={handleDelete} // Removed from ChartSection but function still exists if needed
+                            onDelete={handleDelete} 
                             onEdit={() => setIsEditOpen(true)}
                             isFavorite={user && activeItemKey ? favoriteKeys.includes(activeItemKey) : false}
                             onToggleFavorite={handleToggleFavorite}
                             isLoggedIn={!!user}
                             onLoginRequest={() => setIsLoginOpen(true)}
+                            prevItem={prevItem || undefined}
+                            nextItem={nextItem || undefined}
+                            onNavigate={loadSavedItem}
                         />
                         </div><AnalysisPanel data={data} /></div> : null}
                  </div>

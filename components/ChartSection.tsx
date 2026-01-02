@@ -10,8 +10,8 @@ import {
   ResponsiveContainer,
   Area
 } from 'recharts';
-import { ComparisonResponse, CATEGORY_MAP, CATEGORY_COLOR_MAP } from '../types';
-import { RefreshCw, Database, Trash2, Star, Pencil, Share2, Check, CloudUpload, AlertTriangle } from 'lucide-react';
+import { ComparisonResponse, CATEGORY_MAP, CATEGORY_COLOR_MAP, SavedComparison } from '../types';
+import { RefreshCw, Database, Star, Pencil, Share2, Check, CloudUpload, AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface ChartSectionProps {
   data: ComparisonResponse;
@@ -25,6 +25,9 @@ interface ChartSectionProps {
   onToggleFavorite: () => void;
   isLoggedIn: boolean;
   onLoginRequest: () => void;
+  prevItem?: SavedComparison;
+  nextItem?: SavedComparison;
+  onNavigate?: (key: string) => void;
 }
 
 const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
@@ -60,7 +63,8 @@ const getCategoryStyle = (cat: string) => CATEGORY_COLOR_MAP[cat] || 'bg-slate-7
 
 const ChartSection: React.FC<ChartSectionProps> = ({ 
     data, onRefresh, isLoading, syncState, 
-    isAdmin, onDelete, onEdit, isFavorite, onToggleFavorite, isLoggedIn, onLoginRequest
+    isAdmin, onDelete, onEdit, isFavorite, onToggleFavorite, isLoggedIn, onLoginRequest,
+    prevItem, nextItem, onNavigate
 }) => {
   const [isCopied, setIsCopied] = useState(false);
 
@@ -72,7 +76,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({
     sourceR2: '已存档',
     sourceNew: '实时生成',
     syncing: '云端同步中...',
-    syncError: '同步失败'
+    syncError: '同步失败',
+    prev: '上一条',
+    next: '下一条'
   };
 
   const chartData = useMemo(() => {
@@ -167,6 +173,11 @@ const ChartSection: React.FC<ChartSectionProps> = ({
   if (!chartData.length) {
       return <div className="h-full flex items-center justify-center text-slate-500 italic text-sm">暂无有效图表数据。</div>;
   }
+
+  const cleanTitle = (item: SavedComparison) => {
+      let t = item.titleZh || item.titleEn || item.filename;
+      return t.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -285,6 +296,41 @@ const ChartSection: React.FC<ChartSectionProps> = ({
             {t.unit}: <span className="text-slate-300">{displayYAxisLabel}</span>
         </div>
       </div>
+
+      {/* Navigation Footer */}
+      {(prevItem || nextItem) && (
+        <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-700/50">
+           {prevItem ? (
+               <button 
+                onClick={() => onNavigate && onNavigate(prevItem.key)}
+                className="flex items-center gap-3 text-left group max-w-[45%]"
+               >
+                   <div className="p-2 rounded-full bg-slate-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0 border border-slate-700 group-hover:border-indigo-500">
+                       <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                   </div>
+                   <div className="hidden md:block overflow-hidden">
+                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">{t.prev}</span>
+                       <span className="text-sm text-slate-300 group-hover:text-indigo-300 font-medium truncate block">{cleanTitle(prevItem)}</span>
+                   </div>
+               </button>
+           ) : <div />}
+
+           {nextItem ? (
+               <button 
+                onClick={() => onNavigate && onNavigate(nextItem.key)}
+                className="flex items-center gap-3 text-right justify-end group max-w-[45%]"
+               >
+                   <div className="hidden md:block overflow-hidden">
+                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">{t.next}</span>
+                       <span className="text-sm text-slate-300 group-hover:text-indigo-300 font-medium truncate block">{cleanTitle(nextItem)}</span>
+                   </div>
+                   <div className="p-2 rounded-full bg-slate-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0 border border-slate-700 group-hover:border-indigo-500">
+                       <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                   </div>
+               </button>
+           ) : <div />}
+        </div>
+      )}
     </div>
   );
 };
