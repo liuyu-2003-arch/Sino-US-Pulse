@@ -1,5 +1,4 @@
-
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ComposedChart,
   Line,
@@ -11,7 +10,7 @@ import {
   Area
 } from 'recharts';
 import { ComparisonResponse } from '../types';
-import { RefreshCw, Database, Trash2, Star, Pencil } from 'lucide-react';
+import { RefreshCw, Database, Trash2, Star, Pencil, Share2, Check } from 'lucide-react';
 
 interface ChartSectionProps {
   data: ComparisonResponse;
@@ -59,6 +58,8 @@ const ChartSection: React.FC<ChartSectionProps> = ({
     data, onRefresh, isLoading, syncState, 
     isAdmin, onDelete, onEdit, isFavorite, onToggleFavorite, isLoggedIn, onLoginRequest
 }) => {
+  const [isCopied, setIsCopied] = useState(false);
+
   const t = {
     unit: '单位',
     usa: '美国',
@@ -103,26 +104,23 @@ const ChartSection: React.FC<ChartSectionProps> = ({
     return [...new Set(ticks)].sort((a, b) => a - b);
   }, [chartData]);
 
-  // Helper to clean up the yAxisLabel from verbose AI output
   const displayYAxisLabel = useMemo(() => {
       let label = data.yAxisLabel || '';
-      
-      // 1. Remove text in brackets []
       label = label.replace(/\[.*?\]/g, '');
-      
-      // 2. Remove text starting with "Note:" or "Source:"
       label = label.replace(/(Note|Source):.*/i, '');
-      
-      // 3. Trim whitespace
       label = label.trim();
-
-      // 4. Handle "GDP (Unit)" pattern -> extract "Unit"
       if (label.startsWith('GDP (') && label.endsWith(')')) {
           label = label.substring(5, label.length - 1);
       }
-
       return label;
   }, [data.yAxisLabel]);
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    });
+  };
 
   if (!chartData.length) {
       return <div className="h-full flex items-center justify-center text-slate-500 italic text-sm">暂无有效图表数据。</div>;
@@ -153,7 +151,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({
 
           <div className="h-6 w-px bg-slate-700 mx-1"></div>
 
-          {/* Favorite Button - Visible to everyone (triggers login if guest) */}
+          {/* Favorite Button */}
           <button
             onClick={isLoggedIn ? onToggleFavorite : onLoginRequest}
             className={`p-2 rounded-lg transition-colors ${isFavorite ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20' : 'text-slate-400 hover:text-amber-400 hover:bg-slate-800'}`}
@@ -162,14 +160,22 @@ const ChartSection: React.FC<ChartSectionProps> = ({
              <Star className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
           </button>
 
+          {/* Share Button */}
+          <button
+            onClick={handleShare}
+            className={`p-2 rounded-lg transition-colors ml-1 ${isCopied ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-800'}`}
+            title="分享页面链接"
+          >
+             {isCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+          </button>
+
           {/* Admin Only Actions: Refresh, Edit, Delete */}
           {isAdmin && (
             <>
-             {/* Refresh Button - Moved inside isAdmin check */}
              <button
                 onClick={onRefresh}
                 disabled={isLoading}
-                className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors disabled:opacity-50"
+                className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors disabled:opacity-50 ml-1"
                 title="刷新数据 (管理员)"
              >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -212,7 +218,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({
             <YAxis yAxisId="left" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(1)}k` : v} />
             <YAxis yAxisId="right" orientation="right" stroke="#10b981" fontSize={10} tickLine={false} axisLine={false} tickFormatter={v => `${v}x`} domain={[0, 'auto']} />
             <Tooltip content={<CustomTooltip />} />
-            {/* Legend removed from here, moved to footer */}
             <Area yAxisId="left" type="monotone" dataKey="usa" name={t.usa} stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorUsa)" />
             <Area yAxisId="left" type="monotone" dataKey="china" name={t.china} stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorChina)" />
             <Line yAxisId="right" type="monotone" dataKey="ratio" name={t.ratio} stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={{ r: 4 }} />

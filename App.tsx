@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { fetchComparisonData, fetchSavedComparisonByKey, listSavedComparisons, deleteComparison, saveEditedComparison } from './services/geminiService';
 import { supabase, isUserAdmin, signOut, getFavorites, addFavorite, removeFavorite } from './services/supabase';
@@ -100,9 +99,16 @@ const App: React.FC = () => {
       loadLibraryAndFavorites();
   }, [user]); // Reload when user changes
 
+  // Init Data based on URL or Default
   useEffect(() => {
-    if (currentQuery) {
-        loadData(currentQuery);
+    const params = new URLSearchParams(window.location.search);
+    const keyParam = params.get('key');
+    const qParam = params.get('q');
+
+    if (keyParam) {
+        loadSavedItem(keyParam);
+    } else if (qParam) {
+        loadData(qParam);
     } else {
         loadInitialData();
     }
@@ -133,17 +139,30 @@ const App: React.FC = () => {
         setData(null);
     }
 
+    // Update URL
+    if (typeof window !== 'undefined') {
+        try {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('key');
+            url.searchParams.set('q', query);
+            window.history.pushState({}, '', url.toString());
+        } catch (e) {
+            console.warn("Could not update URL history:", e);
+        }
+    }
+
     setLoading(true);
     setError(null);
     setSyncState('idle');
     setCurrentQuery(query);
+    setActiveItemKey(''); // Reset key until we know it or save it
+
     try {
       const { data, uploadPromise } = await fetchComparisonData(query, language, forceRefresh, isAdmin);
       setData(data);
       
       // We set active item key if we can find it in the library logic, 
       // but if it's new it won't have a key immediately until we refetch library.
-      // For now, reset key so sidebar doesn't show wrong selection.
       const safeTitle = (data.titleEn || data.title || 'untitled').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
       const derivedKey = `sino-pulse/v1/${safeTitle}.json`;
       setActiveItemKey(derivedKey);
@@ -173,6 +192,18 @@ const App: React.FC = () => {
       setIsArchiveOpen(false);
       setIsSidebarOpen(false);
       setActiveItemKey(key);
+      
+      // Update URL
+      if (typeof window !== 'undefined') {
+        try {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('q');
+            url.searchParams.set('key', key);
+            window.history.pushState({}, '', url.toString());
+        } catch (e) {
+            console.warn("Could not update URL history:", e);
+        }
+      }
       
       // Explicitly clear data to force the skeleton loader for context switches
       setData(null);
