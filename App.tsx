@@ -7,7 +7,7 @@ import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
 import LoginModal from './components/LoginModal';
 import EditModal from './components/EditModal';
-import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home } from 'lucide-react';
+import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List } from 'lucide-react';
 
 const App: React.FC = () => {
   // Hardcoded to Chinese for this version as requested
@@ -41,7 +41,7 @@ const App: React.FC = () => {
   const t = {
     title: '中美脉搏',
     favoritesTitle: '我的收藏',
-    latestTitle: '最新对比',
+    latestTitle: '所有对比',
     noItems: '暂无收藏',
     noItemsGuest: '登录以收藏对比',
     poweredBy: '由 Gemini 3 Pro 驱动',
@@ -309,9 +309,8 @@ const App: React.FC = () => {
   // Display only 3 items initially
   const displayedFavorites = favoriteItems.slice(0, 3);
 
-  // Latest items (limit to 20 total for data, display 3 for sidebar)
-  const latestItems = allLibraryItems.slice(0, 20);
-  const displayedLatest = latestItems.slice(0, 3);
+  // Display ALL items instead of a slice
+  const displayedLatest = allLibraryItems;
 
   const renderSkeleton = () => (
     <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
@@ -411,9 +410,9 @@ const App: React.FC = () => {
             )}
           </div>
 
-          {/* Latest Section */}
+          {/* All Items Section (Previously Latest) */}
           <div className="pt-4 border-t border-slate-800/50">
-            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-4 px-2 flex justify-between items-center">{t.latestTitle} <Clock className="w-3 h-3 text-slate-600" /></h3>
+            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-4 px-2 flex justify-between items-center">{t.latestTitle} <List className="w-3 h-3 text-slate-600" /></h3>
             
             {isLibraryLoading && allLibraryItems.length === 0 ? (
                  <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-slate-600" /></div>
@@ -441,15 +440,6 @@ const App: React.FC = () => {
                             </button>
                         );
                     })}
-                    {latestItems.length > 3 && (
-                        <button 
-                            onClick={() => openArchive('all')}
-                            className="w-full flex items-center gap-2 mt-1 px-3 py-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors group"
-                        >
-                            <span>{t.showMore}</span>
-                            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                        </button>
-                    )}
                 </div>
             )}
           </div>
