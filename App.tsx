@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { fetchComparisonData, fetchSavedComparisonByKey, listSavedComparisons, deleteComparison, saveEditedComparison } from './services/geminiService';
 import { supabase, isUserAdmin, signOut, getFavorites, addFavorite, removeFavorite } from './services/supabase';
-import { ComparisonResponse, PRESET_QUERIES, SavedComparison } from './types';
+import { ComparisonResponse, SavedComparison } from './types';
 import ChartSection from './components/ChartSection';
 import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
 import LoginModal from './components/LoginModal';
 import EditModal from './components/EditModal';
-import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List } from 'lucide-react';
+import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List, LayoutGrid, Calendar } from 'lucide-react';
 
 const App: React.FC = () => {
   // Hardcoded to Chinese for this version as requested
   const language = 'zh';
 
+  const [viewMode, setViewMode] = useState<'chart' | 'list'>('list');
   const [data, setData] = useState<ComparisonResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +61,9 @@ const App: React.FC = () => {
     deleteFail: '删除失败',
     showMore: '查看全部',
     backHome: '返回主页',
+    homeTitle: '所有对比档案',
+    category: '分类',
+    lastUpdated: '更新于',
   };
 
   useEffect(() => {
@@ -100,47 +104,52 @@ const App: React.FC = () => {
       loadLibraryAndFavorites();
   }, [user]); // Reload when user changes
 
-  // Init Data based on URL or Default
+  // Handle Initial Route
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const keyParam = params.get('key');
     const qParam = params.get('q');
 
     if (keyParam) {
+        setViewMode('chart');
         loadSavedItem(keyParam);
     } else if (qParam) {
+        setViewMode('chart');
         loadData(qParam);
     } else {
-        loadInitialData();
+        setViewMode('list');
     }
+    
+    // Simple popstate handler for back button
+    const handlePopState = () => {
+        const p = new URLSearchParams(window.location.search);
+        if (!p.get('key') && !p.get('q')) {
+            setViewMode('list');
+            setData(null);
+        }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const loadInitialData = async () => {
-      setLoading(true);
-      try {
-          // If there are library items, load the first one (most recent usually)
-          // We need to fetch items first if not loaded, but since effect runs parallel, we do a quick fetch
-          const items = await listSavedComparisons(language);
-          if (items.length > 0) {
-              await loadSavedItem(items[0].key);
-          } else {
-              await loadData(PRESET_QUERIES[0].query);
-          }
-      } catch (e) {
-          await loadData(PRESET_QUERIES[0].query);
-      } finally {
-          setLoading(false);
+  const goHome = (e?: React.MouseEvent) => {
+      e?.preventDefault();
+      setViewMode('list');
+      setIsSidebarOpen(false);
+      setData(null);
+      setActiveItemKey('');
+      if (typeof window !== 'undefined') {
+          window.history.pushState({}, '', '/');
       }
   };
 
   const loadData = async (query: string, forceRefresh: boolean = false) => {
+    setViewMode('chart');
     // If we are switching to a new query (creating new comparison), clear the data 
-    // to show the full-page skeleton loader instead of the refresh spinner.
     if (query !== currentQuery) {
         setData(null);
     }
 
-    // Update URL to show query immediately for feedback
     if (typeof window !== 'undefined') {
         try {
             const url = new URL(window.location.href);
@@ -156,25 +165,21 @@ const App: React.FC = () => {
     setError(null);
     setSyncState('idle');
     setCurrentQuery(query);
-    setActiveItemKey(''); // Reset key until we know it or save it
+    setActiveItemKey(''); 
 
     try {
       const { data, uploadPromise } = await fetchComparisonData(query, language, forceRefresh, isAdmin);
       setData(data);
       
-      // Calculate the persistent key for this data
       const safeTitle = (data.titleEn || data.title || 'untitled').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-      // Fallback if regex strips everything
       const finalSafeTitle = safeTitle.length > 0 ? safeTitle : `comparison_${Date.now()}`;
       const derivedKey = `sino-pulse/v1/${finalSafeTitle}.json`;
       setActiveItemKey(derivedKey);
 
-      // Function to update URL to use the permanent KEY instead of temporary Query
       const updateUrlToKey = () => {
          if (typeof window !== 'undefined') {
             try {
                 const url = new URL(window.location.href);
-                // Only replace if we are currently using the 'q' param (user hasn't navigated away)
                 if (url.searchParams.has('q')) {
                     url.searchParams.delete('q');
                     url.searchParams.set('key', derivedKey);
@@ -185,14 +190,12 @@ const App: React.FC = () => {
       };
 
       if (data.source === 'r2') {
-          // If data was loaded from cache, it is already persistent. Switch URL immediately.
           updateUrlToKey();
       } else if (data.source === 'api' && uploadPromise) {
           setSyncState('syncing');
           uploadPromise.then(() => {
               setSyncState('success');
-              loadLibraryAndFavorites(); // Refresh library
-              // Once synced to R2, it is safe to switch the URL to the permanent key
+              loadLibraryAndFavorites(); 
               updateUrlToKey();
           }).catch(() => setSyncState('error'));
       }
@@ -209,13 +212,13 @@ const App: React.FC = () => {
 
   const loadSavedItem = async (key: string) => {
       // If clicking the currently active item, do nothing
-      if (key === activeItemKey && data) return;
+      if (key === activeItemKey && data && viewMode === 'chart') return;
 
+      setViewMode('chart');
       setIsArchiveOpen(false);
       setIsSidebarOpen(false);
       setActiveItemKey(key);
       
-      // Update URL
       if (typeof window !== 'undefined') {
         try {
             const url = new URL(window.location.href);
@@ -227,7 +230,6 @@ const App: React.FC = () => {
         }
       }
       
-      // Explicitly clear data to force the skeleton loader for context switches
       setData(null);
       setLoading(true);
       setError(null);
@@ -264,8 +266,7 @@ const App: React.FC = () => {
       try {
           await deleteComparison(activeItemKey);
           await loadLibraryAndFavorites();
-          // Reset to default or clear
-          await loadInitialData();
+          goHome();
       } catch (e) {
           alert(t.deleteFail);
       }
@@ -308,8 +309,7 @@ const App: React.FC = () => {
   const favoriteItems = allLibraryItems.filter(item => favoriteKeys.includes(item.key));
   // Display only 3 items initially
   const displayedFavorites = favoriteItems.slice(0, 3);
-
-  // Display ALL items instead of a slice
+  // Display ALL items for sidebar list
   const displayedLatest = allLibraryItems;
 
   const renderSkeleton = () => (
@@ -358,17 +358,17 @@ const App: React.FC = () => {
       
       <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-72 bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`}>
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-            <a href="https://uc.324893.xyz/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <a href="/" onClick={goHome} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                 <div className="p-2 bg-indigo-600 rounded-lg"><Globe className="w-6 h-6 text-white" /></div>
                 <span className="text-xl font-bold tracking-tight text-white">{t.title}</span>
             </a>
         </div>
         
         <div className="p-4 space-y-2">
-            <a href="https://www.324893.xyz/" className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-left text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700/50">
+            <button onClick={goHome} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-left text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700/50">
                 <Home className="w-5 h-5 text-indigo-400" /> 
                 <span className="truncate flex-1">{t.backHome}</span>
-            </a>
+            </button>
             <button onClick={() => openArchive('all')} className="w-full flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-semibold transition-all text-left text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 shadow-lg"><Database className="w-5 h-5 text-emerald-400" /> <span className="truncate flex-1">{t.cloudLibrary}</span></button>
         </div>
 
@@ -410,7 +410,7 @@ const App: React.FC = () => {
             )}
           </div>
 
-          {/* All Items Section (Previously Latest) */}
+          {/* All Items Section */}
           <div className="pt-4 border-t border-slate-800/50">
             <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 mt-4 px-2 flex justify-between items-center">{t.latestTitle} <List className="w-3 h-3 text-slate-600" /></h3>
             
@@ -477,30 +477,75 @@ const App: React.FC = () => {
       </aside>
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         <header className="lg:hidden h-16 border-b border-slate-800 flex items-center px-4 justify-between bg-slate-900/90 backdrop-blur">
-          <a href="https://uc.324893.xyz/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <a href="/" onClick={goHome} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <Globe className="w-6 h-6 text-indigo-500" /><span className="font-bold">{t.title}</span>
           </a>
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-400">{isSidebarOpen ? <X /> : <Menu />}</button>
         </header>
         <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-          {loading && !data ? renderSkeleton() : error ? <div className="flex items-center justify-center h-full text-red-400"><div className="text-center max-w-md"><p className="text-lg font-semibold mb-2">{t.errorTitle}</p><p className="font-mono text-sm bg-red-950/50 border border-red-900/50 px-3 py-2 rounded mb-4 break-words">{error}</p>
-          {error !== t.permissionDenied && <button onClick={() => loadData(PRESET_QUERIES[0].query)} className="mt-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors text-slate-200 font-medium">{t.retry}</button>}
-          {error === t.permissionDenied && !user && <button onClick={() => setIsLoginOpen(true)} className="mt-2 px-4 py-2 bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors text-white font-medium">{t.login}</button>}
-          </div></div> : data ? <div className="max-w-6xl mx-auto space-y-8"><div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden">
-            <ChartSection 
-                data={data} 
-                onRefresh={handleRefresh} 
-                isLoading={loading} 
-                syncState={syncState} 
-                isAdmin={isAdmin}
-                onDelete={handleDelete}
-                onEdit={() => setIsEditOpen(true)}
-                isFavorite={user && activeItemKey ? favoriteKeys.includes(activeItemKey) : false}
-                onToggleFavorite={handleToggleFavorite}
-                isLoggedIn={!!user}
-                onLoginRequest={() => setIsLoginOpen(true)}
-            />
-            </div><AnalysisPanel data={data} /></div> : null}
+          {viewMode === 'list' ? (
+             <div className="max-w-7xl mx-auto">
+                <h1 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                   <LayoutGrid className="w-6 h-6 text-indigo-400" />
+                   {t.homeTitle}
+                </h1>
+                
+                {isLibraryLoading && allLibraryItems.length === 0 ? (
+                    <div className="flex items-center justify-center h-64">
+                        <Loader2 className="w-8 h-8 animate-spin text-slate-600" />
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {allLibraryItems.map(item => {
+                            const displayTitle = item.titleZh || item.titleEn || item.filename;
+                            const cleanTitle = displayTitle.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
+                            const isFav = favoriteKeys.includes(item.key);
+                            
+                            return (
+                                <div 
+                                    key={item.key}
+                                    onClick={() => loadSavedItem(item.key)}
+                                    className="group bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-indigo-500/50 rounded-xl p-5 cursor-pointer transition-all hover:shadow-xl hover:shadow-indigo-900/10 flex flex-col h-full"
+                                >
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase rounded tracking-wider">
+                                            {item.category || 'Custom'}
+                                        </div>
+                                        {isFav && <Star className="w-4 h-4 text-amber-500/50 fill-current" />}
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-200 group-hover:text-white leading-snug mb-4 line-clamp-2">
+                                        {cleanTitle}
+                                    </h3>
+                                    <div className="mt-auto flex items-center gap-2 text-xs text-slate-500">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        <span>{t.lastUpdated} {item.lastModified?.toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+             </div>
+          ) : (
+              loading && !data ? renderSkeleton() : error ? <div className="flex items-center justify-center h-full text-red-400"><div className="text-center max-w-md"><p className="text-lg font-semibold mb-2">{t.errorTitle}</p><p className="font-mono text-sm bg-red-950/50 border border-red-900/50 px-3 py-2 rounded mb-4 break-words">{error}</p>
+              {error !== t.permissionDenied && <button onClick={() => loadData('GDP (Gross Domestic Product) in USD from 1945 to 2024')} className="mt-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors text-slate-200 font-medium">{t.retry}</button>}
+              {error === t.permissionDenied && !user && <button onClick={() => setIsLoginOpen(true)} className="mt-2 px-4 py-2 bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors text-white font-medium">{t.login}</button>}
+              </div></div> : data ? <div className="max-w-6xl mx-auto space-y-8"><div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl h-[500px] relative overflow-hidden">
+                <ChartSection 
+                    data={data} 
+                    onRefresh={handleRefresh} 
+                    isLoading={loading} 
+                    syncState={syncState} 
+                    isAdmin={isAdmin}
+                    onDelete={handleDelete}
+                    onEdit={() => setIsEditOpen(true)}
+                    isFavorite={user && activeItemKey ? favoriteKeys.includes(activeItemKey) : false}
+                    onToggleFavorite={handleToggleFavorite}
+                    isLoggedIn={!!user}
+                    onLoginRequest={() => setIsLoginOpen(true)}
+                />
+                </div><AnalysisPanel data={data} /></div> : null
+          )}
         </div>
       </main>
     </div>
