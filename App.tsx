@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { fetchComparisonData, fetchSavedComparisonByKey, listSavedComparisons, deleteComparison, saveEditedComparison } from './services/geminiService';
 import { supabase, isUserAdmin, signOut, getFavorites, addFavorite, removeFavorite } from './services/supabase';
 import { ComparisonResponse, SavedComparison } from './types';
@@ -7,7 +7,7 @@ import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
 import LoginModal from './components/LoginModal';
 import EditModal from './components/EditModal';
-import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List, LayoutGrid, Calendar, Plus } from 'lucide-react';
+import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List, LayoutGrid, Calendar, Plus, Filter } from 'lucide-react';
 
 const App: React.FC = () => {
   // Hardcoded to Chinese for this version as requested
@@ -27,6 +27,9 @@ const App: React.FC = () => {
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
   
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  
+  // Filtering State
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   
   // Modal States
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
@@ -66,6 +69,7 @@ const App: React.FC = () => {
     category: '分类',
     lastUpdated: '更新于',
     createNewCard: '创建新对比',
+    all: '全部',
   };
 
   useEffect(() => {
@@ -307,6 +311,18 @@ const App: React.FC = () => {
       setIsArchiveOpen(true);
   };
 
+  // Derive categories
+  const categories = useMemo(() => {
+    const cats = new Set(allLibraryItems.map(item => item.category || 'Custom'));
+    return ['All', ...Array.from(cats).sort()];
+  }, [allLibraryItems]);
+
+  // Derive filtered items for grid
+  const filteredLibraryItems = useMemo(() => {
+    if (selectedCategory === 'All') return allLibraryItems;
+    return allLibraryItems.filter(item => (item.category || 'Custom') === selectedCategory);
+  }, [allLibraryItems, selectedCategory]);
+
   // Derive display list for sidebar
   const favoriteItems = allLibraryItems.filter(item => favoriteKeys.includes(item.key));
   // Display only 3 items initially
@@ -505,14 +521,45 @@ const App: React.FC = () => {
                         </button>
                     )}
                 </div>
+
+                {/* Category Filters */}
+                <div className="mb-8 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                    <div className="flex items-center gap-2 px-1">
+                        <Filter className="w-4 h-4 text-slate-500 mr-2" />
+                        {categories.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border ${
+                                    selectedCategory === cat 
+                                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-500/20' 
+                                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200'
+                                }`}
+                            >
+                                {cat === 'All' ? t.all : cat}
+                            </button>
+                        ))}
+                    </div>
+                </div>
                 
                 {isLibraryLoading && allLibraryItems.length === 0 ? (
                     <div className="flex items-center justify-center h-64">
                         <Loader2 className="w-8 h-8 animate-spin text-slate-600" />
                     </div>
+                ) : filteredLibraryItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-slate-500 border border-dashed border-slate-700 rounded-2xl bg-slate-800/30">
+                        <Filter className="w-10 h-10 mb-3 opacity-30" />
+                        <p>该分类下暂无对比档案</p>
+                        <button 
+                            onClick={() => setSelectedCategory('All')} 
+                            className="mt-3 text-indigo-400 hover:text-indigo-300 text-sm font-medium"
+                        >
+                            查看全部
+                        </button>
+                    </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {allLibraryItems.map(item => {
+                        {filteredLibraryItems.map(item => {
                             const displayTitle = item.titleZh || item.titleEn || item.filename;
                             const cleanTitle = displayTitle.replace(/[\(\（\s]*\d{4}\s*-\s*\d{4}[\)\）\s]*/g, '').replace(/[\(\（]\s*[\)\）]/g, '').trim();
                             const isFav = favoriteKeys.includes(item.key);
