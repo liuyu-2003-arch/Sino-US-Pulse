@@ -22,7 +22,28 @@ const categoryMap: Record<string, string> = {
   'Health': '健康',
   'Society': '社会',
   'Politics': '政治',
-  'Infrastructure': '基建'
+  'Infrastructure': '基建',
+  'Diplomacy': '外交',
+  'International Relations': '国际关系',
+  'Science & Society': '科学与社会',
+  'Tourism': '旅游',
+  'Space': '航天',
+  'Sports': '体育',
+  'Entertainment': '娱乐',
+  'Transportation': '交通',
+  'Energy': '能源',
+  'Agriculture': '农业',
+  'Finance': '金融',
+  'Manufacturing': '制造',
+  'Labor': '劳动力',
+  'Research': '科研',
+  'History': '历史',
+  'Geography': '地理',
+  'Law': '法律',
+  'Trade': '贸易',
+  'Innovation': '创新',
+  'Governance': '治理',
+  'Media': '媒体'
 };
 
 const getCategoryLabel = (cat: string) => categoryMap[cat] || cat;
@@ -364,6 +385,37 @@ const App: React.FC = () => {
     </div>
   );
 
+  const renderUserSection = (isMobile: boolean) => {
+    if (user) {
+        return (
+            <div className={`flex items-center ${isMobile ? 'justify-between w-full p-2 bg-slate-800/50 border border-slate-700 rounded-lg' : 'gap-4'}`}>
+                <div className="flex items-center gap-3 overflow-hidden">
+                    <div className={`flex items-center justify-center rounded-full bg-indigo-500 text-white ${isMobile ? 'w-8 h-8 p-1.5' : 'w-8 h-8'}`}>
+                        <User className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 text-left">
+                        <span className="text-xs font-medium text-slate-200 truncate max-w-[120px]">{user.email}</span>
+                        <span className="text-[10px] text-indigo-400 font-bold uppercase">{isAdmin ? t.admin : t.guest}</span>
+                    </div>
+                </div>
+                <button onClick={signOut} className={`text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors ${isMobile ? 'p-1.5' : 'p-2'}`} title={t.logout}>
+                    <LogOut className="w-4 h-4" />
+                </button>
+            </div>
+        );
+    } else {
+        return (
+            <button 
+                onClick={() => setIsLoginOpen(true)}
+                className={`flex items-center justify-center gap-2 font-semibold text-slate-200 bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors shadow-lg ${isMobile ? 'w-full px-3 py-2 text-sm' : 'px-4 py-2 text-sm'}`}
+            >
+                <LogIn className="w-4 h-4" />
+                {t.login}
+            </button>
+        );
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-900 text-slate-100">
       <ArchiveModal 
@@ -481,33 +533,12 @@ const App: React.FC = () => {
 
         </nav>
         
-        {/* User / Login Section */}
+        {/* User / Login Section - Mobile Only in Sidebar */}
         <div className="p-4 border-t border-slate-800 z-10 bg-slate-900">
-            {user ? (
-                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-800/50 border border-slate-700">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <div className="p-1.5 bg-indigo-500 rounded-full">
-                            <User className="w-3.5 h-3.5 text-white" />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-medium text-slate-200 truncate max-w-[120px]">{user.email}</span>
-                            <span className="text-[10px] text-indigo-400 font-bold uppercase">{isAdmin ? t.admin : t.guest}</span>
-                        </div>
-                    </div>
-                    <button onClick={signOut} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors" title={t.logout}>
-                        <LogOut className="w-4 h-4" />
-                    </button>
-                </div>
-            ) : (
-                <button 
-                    onClick={() => setIsLoginOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-slate-200 bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors shadow-lg"
-                >
-                    <LogIn className="w-4 h-4" />
-                    {t.login}
-                </button>
-            )}
-            <div className="mt-4 text-center">
+            <div className="lg:hidden mb-4">
+                {renderUserSection(true)}
+            </div>
+            <div className="text-center">
                 <a href="https://324893.xyz" target="_blank" rel="noopener noreferrer" className="text-[10px] text-slate-600 hover:text-indigo-400 uppercase tracking-widest transition-colors">
                     324893.xyz
                 </a>
@@ -515,12 +546,19 @@ const App: React.FC = () => {
         </div>
       </aside>
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
+        {/* Mobile Header */}
         <header className="lg:hidden h-16 border-b border-slate-800 flex items-center px-4 justify-between bg-slate-900/90 backdrop-blur">
           <a href="/" onClick={goHome} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <Globe className="w-6 h-6 text-indigo-500" /><span className="font-bold">{t.title}</span>
           </a>
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-400">{isSidebarOpen ? <X /> : <Menu />}</button>
         </header>
+
+        {/* Desktop Header */}
+        <header className="hidden lg:flex items-center justify-end px-8 py-4 bg-slate-900 border-b border-slate-800 z-20 shrink-0">
+            {renderUserSection(false)}
+        </header>
+
         <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
           {viewMode === 'list' ? (
              <div className="max-w-7xl mx-auto">
