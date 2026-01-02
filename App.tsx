@@ -84,7 +84,7 @@ const App: React.FC = () => {
   const t = {
     title: '中美脉搏',
     favoritesTitle: '我的收藏',
-    latestTitle: '热门对比', // Changed from All/Latest to Popular
+    latestTitle: '热门对比 Top 10', // Changed from All/Latest to Popular
     noItems: '暂无收藏',
     noItemsGuest: '登录以收藏对比',
     poweredBy: '由 Gemini 3 Pro 驱动',
