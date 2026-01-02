@@ -659,18 +659,22 @@ const App: React.FC = () => {
                                             onClick={() => loadSavedItem(item.key)}
                                             className="group bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-indigo-500/50 rounded-xl p-5 cursor-pointer transition-all hover:shadow-xl hover:shadow-indigo-900/10 flex flex-col h-full relative overflow-hidden"
                                         >
-                                            <div className="flex justify-between items-start mb-3 relative z-10">
+                                            <div className="flex justify-between items-start mb-4 relative z-10">
+                                                <h3 className="text-lg font-bold text-slate-200 group-hover:text-white leading-snug line-clamp-2">
+                                                    {cleanTitle}
+                                                </h3>
+                                                {isFav && <Star className="w-4 h-4 text-amber-500/50 fill-current shrink-0 ml-2 mt-1" />}
+                                            </div>
+                                            
+                                            <div className="mt-auto flex items-center justify-between relative z-10">
+                                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                    <Calendar className="w-3.5 h-3.5" />
+                                                    <span>{t.lastUpdated} {item.lastModified?.toLocaleDateString()}</span>
+                                                </div>
+                                                
                                                 <div className="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase rounded tracking-wider">
                                                     {getCategoryLabel(item.category || 'Custom')}
                                                 </div>
-                                                {isFav && <Star className="w-4 h-4 text-amber-500/50 fill-current" />}
-                                            </div>
-                                            <h3 className="text-lg font-bold text-slate-200 group-hover:text-white leading-snug mb-4 line-clamp-2 relative z-10">
-                                                {cleanTitle}
-                                            </h3>
-                                            <div className="mt-auto flex items-center gap-2 text-xs text-slate-500 relative z-10">
-                                                <Calendar className="w-3.5 h-3.5" />
-                                                <span>{t.lastUpdated} {item.lastModified?.toLocaleDateString()}</span>
                                             </div>
                                             
                                             {/* Subtle hover effect background */}
