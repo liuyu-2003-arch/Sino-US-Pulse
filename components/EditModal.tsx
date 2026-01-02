@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ComparisonResponse, CATEGORY_MAP } from '../types';
-import { X, Save, Edit3, Loader2, Trash2 } from 'lucide-react';
+import { X, Save, Edit3, Loader2, Trash2, ChevronDown } from 'lucide-react';
 
 interface EditModalProps {
   isOpen: boolean;
@@ -14,6 +14,7 @@ interface EditModalProps {
 const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, onDelete }) => {
   const [formData, setFormData] = useState<ComparisonResponse>(data);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -40,6 +41,17 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, on
       setIsSaving(false);
     }
   };
+
+  // Filter categories based on input
+  const filteredCategories = Object.entries(CATEGORY_MAP)
+    .sort((a, b) => a[1].localeCompare(b[1], 'zh'))
+    .filter(([key, label]) => {
+        const term = (formData.category || '').toLowerCase();
+        // Show all if input matches exactly a key (so user sees they selected it) or if input is empty
+        // Otherwise filter
+        if (!term) return true;
+        return key.toLowerCase().includes(term) || label.toLowerCase().includes(term);
+    });
 
   if (!isOpen) return null;
 
@@ -86,22 +98,53 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, on
                 </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
                 <label className="text-sm font-medium text-slate-400">分类 (Category)</label>
-                {/* Datalist Input for selection + typing */}
-                <input
-                    type="text"
-                    list="category-options"
-                    value={formData.category || ''}
-                    onChange={(e) => handleChange('category', e.target.value)}
-                    placeholder="输入分类名称或从列表中选择..."
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
-                />
-                <datalist id="category-options">
-                    {Object.entries(CATEGORY_MAP).sort((a, b) => a[1].localeCompare(b[1], 'zh')).map(([key, label]) => (
-                        <option key={key} value={key}>{label} ({key})</option>
-                    ))}
-                </datalist>
+                <div className="relative">
+                    <input
+                        type="text"
+                        value={formData.category || ''}
+                        onChange={(e) => {
+                             handleChange('category', e.target.value);
+                             setIsCategoryDropdownOpen(true);
+                        }}
+                        onFocus={() => setIsCategoryDropdownOpen(true)}
+                        onBlur={() => {
+                            // Small delay to allow click on dropdown item to register before closing
+                            setTimeout(() => setIsCategoryDropdownOpen(false), 200);
+                        }}
+                        placeholder="输入分类名称或从列表中选择..."
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 pr-10 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
+                    />
+                    <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                    
+                    {isCategoryDropdownOpen && (
+                        <div className="absolute z-50 w-full mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar ring-1 ring-black/5">
+                             {filteredCategories.length > 0 ? (
+                                filteredCategories.map(([key, label]) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onMouseDown={(e) => {
+                                            // Prevent blur event from firing before click
+                                            e.preventDefault(); 
+                                            handleChange('category', key);
+                                            setIsCategoryDropdownOpen(false);
+                                        }}
+                                        className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-indigo-600/20 hover:text-indigo-300 transition-colors flex justify-between items-center group border-b border-slate-700/50 last:border-0"
+                                    >
+                                        <span className="font-medium">{label}</span>
+                                        <span className="text-xs text-slate-500 group-hover:text-indigo-400 font-mono bg-slate-900/50 px-1.5 py-0.5 rounded">{key}</span>
+                                    </button>
+                                ))
+                             ) : (
+                                <div className="px-4 py-3 text-sm text-slate-500 italic text-center">
+                                    没有找到匹配的预设分类，将使用自定义分类。
+                                </div>
+                             )}
+                        </div>
+                    )}
+                </div>
                 <p className="text-xs text-slate-500">提示: 选择预设分类可获得对应颜色标签；自定义分类将使用默认颜色。</p>
             </div>
 
