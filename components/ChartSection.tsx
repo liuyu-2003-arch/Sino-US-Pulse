@@ -307,6 +307,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({
                <button 
                 onClick={() => onNavigate && onNavigate(prevItem.key)}
                 className="flex items-center gap-2 md:gap-3 text-left group max-w-[45%]"
+                title="快捷键: ←"
                >
                    <div className="p-1.5 md:p-2 rounded-full bg-slate-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0 border border-slate-700 group-hover:border-indigo-500">
                        <ArrowLeft className="w-3 h-3 md:w-4 md:h-4 group-hover:-translate-x-0.5 transition-transform" />
@@ -322,6 +323,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({
                <button 
                 onClick={() => onNavigate && onNavigate(nextItem.key)}
                 className="flex items-center gap-2 md:gap-3 text-right justify-end group max-w-[45%]"
+                title="快捷键: →"
                >
                    <div className="hidden md:block overflow-hidden">
                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">{t.next}</span>

@@ -8,7 +8,7 @@ import AnalysisPanel from './components/AnalysisPanel';
 import ArchiveModal from './components/ArchiveModal';
 import LoginModal from './components/LoginModal';
 import EditModal from './components/EditModal';
-import { Globe, Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, Home, List, LayoutGrid, Calendar, Plus, Filter, Flame, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Menu, X, Database, Star, BarChart3, Loader2, LogIn, LogOut, User, FolderHeart, Clock, ArrowRight, LayoutGrid, Calendar, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const getCategoryLabel = (cat: string) => CATEGORY_MAP[cat] || cat;
 const getCategoryStyle = (cat: string) => CATEGORY_COLOR_MAP[cat] || 'bg-slate-700/50 text-slate-400 border-slate-600/50';
@@ -398,6 +398,29 @@ const App: React.FC = () => {
     return { prevItem: prev, nextItem: next };
   }, [activeItemKey, allLibraryItems]);
 
+  // Keyboard Navigation Effect
+  useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+          // Only navigate if in chart view
+          if (viewMode !== 'chart') return;
+          // Disable if any modal is open
+          if (isArchiveOpen || isLoginOpen || isEditOpen) return;
+          
+          // Disable if typing in an input
+          const target = e.target as HTMLElement;
+          if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
+          if (e.key === 'ArrowLeft' && prevItem) {
+              loadSavedItem(prevItem.key);
+          } else if (e.key === 'ArrowRight' && nextItem) {
+              loadSavedItem(nextItem.key);
+          }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode, isArchiveOpen, isLoginOpen, isEditOpen, prevItem, nextItem]);
+
 
   // Derive display list for sidebar
   const favoriteItems = allLibraryItems.filter(item => favoriteKeys.includes(item.key));
@@ -486,7 +509,11 @@ const App: React.FC = () => {
       <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-72 bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`}>
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
             <a href="/" onClick={goHome} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <div className="p-2 bg-indigo-600 rounded-lg"><Globe className="w-6 h-6 text-white" /></div>
+                <div className="p-2 bg-indigo-600 rounded-lg">
+                    <svg viewBox="0 0 512 512" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="48" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M96 256h64l48-112 64 224 64-112h80" />
+                    </svg>
+                </div>
                 <span className="text-xl font-bold tracking-tight text-white">{t.title}</span>
             </a>
         </div>
@@ -595,7 +622,12 @@ const App: React.FC = () => {
         {/* Mobile Header */}
         <header className="lg:hidden h-16 border-b border-slate-800 flex items-center px-4 justify-between bg-slate-900/90 backdrop-blur">
           <a href="/" onClick={goHome} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Globe className="w-6 h-6 text-indigo-500" /><span className="font-bold">{t.title}</span>
+              <div className="p-1.5 bg-indigo-600 rounded-lg">
+                  <svg viewBox="0 0 512 512" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="48" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M96 256h64l48-112 64 224 64-112h80" />
+                  </svg>
+              </div>
+              <span className="font-bold">{t.title}</span>
           </a>
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-400">{isSidebarOpen ? <X /> : <Menu />}</button>
         </header>
