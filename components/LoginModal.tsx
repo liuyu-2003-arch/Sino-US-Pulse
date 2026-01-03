@@ -56,7 +56,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     title: isSignUp ? '注册账户' : '登录账户',
     google: 'Google',
     github: 'GitHub',
-    desc: '管理员可管理数据，注册用户可收藏对比，访客仅可浏览。',
+    desc: '登录后收藏和创建对比条目',
     emailPlaceholder: '邮箱地址',
     passwordPlaceholder: '密码',
     or: '或',
