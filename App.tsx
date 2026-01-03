@@ -743,12 +743,12 @@ const App: React.FC = () => {
              </div>
           ) : (
               /* Chart Mode Layout */
-              <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+              <div className="flex-1 overflow-y-auto p-2 md:p-8 scroll-smooth">
                  <div className="max-w-7xl mx-auto">
                     {loading && !data ? renderSkeleton() : error ? <div className="flex items-center justify-center h-full text-red-400"><div className="text-center max-w-md"><p className="text-lg font-semibold mb-2">{t.errorTitle}</p><p className="font-mono text-sm bg-red-950/50 border border-red-900/50 px-3 py-2 rounded mb-4 break-words">{error}</p>
                     {error !== t.permissionDenied && <button onClick={() => loadData('GDP (Gross Domestic Product) in USD from 1945 to 2024')} className="mt-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors text-slate-200 font-medium">{t.retry}</button>}
                     {error === t.permissionDenied && !user && <button onClick={() => setIsLoginOpen(true)} className="mt-2 px-4 py-2 bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors text-white font-medium">{t.login}</button>}
-                    </div></div> : data ? <div className="space-y-8"><div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-2xl h-[500px] md:h-[550px] relative overflow-hidden flex flex-col">
+                    </div></div> : data ? <div className="space-y-8"><div className="bg-slate-800 border border-slate-700 rounded-2xl p-2 md:p-6 shadow-2xl h-[500px] md:h-[550px] relative overflow-hidden flex flex-col">
                         <ChartSection 
                             data={data} 
                             onRefresh={handleRefresh} 

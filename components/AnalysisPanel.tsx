@@ -1,3 +1,4 @@
+
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ComparisonResponse } from '../types';
@@ -47,7 +48,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ data }) => {
       
        {/* Summary Card */}
        {data.summary && (
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full">
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 md:p-6 hover:bg-slate-800/70 transition-colors w-full">
             <div className="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4">
                 <div className="p-2 bg-indigo-500/10 rounded-lg">
                     <Lightbulb className="w-6 h-6 text-indigo-400" />
@@ -59,7 +60,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ data }) => {
       )}
 
       {/* Detailed Analysis Card */}
-      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full">
+      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 md:p-6 hover:bg-slate-800/70 transition-colors w-full">
         <div className="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4">
              <div className="p-2 bg-emerald-500/10 rounded-lg">
                 <TrendingUp className="w-6 h-6 text-emerald-400" />
@@ -71,7 +72,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ data }) => {
 
        {/* Future Outlook Card */}
        {data.futureOutlook && (
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full">
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 md:p-6 hover:bg-slate-800/70 transition-colors w-full">
             <div className="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4">
                 <div className="p-2 bg-purple-500/10 rounded-lg">
                     <Telescope className="w-6 h-6 text-purple-400" />
@@ -84,7 +85,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ data }) => {
 
       {/* Sources Card */}
       {data.sources && data.sources.length > 0 && (
-         <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-colors w-full">
+         <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 md:p-6 hover:bg-slate-800/70 transition-colors w-full">
           <div className="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4">
               <div className="p-2 bg-slate-500/10 rounded-lg">
                   <BookOpen className="w-6 h-6 text-slate-400" />
