@@ -181,21 +181,24 @@ const ChartSection: React.FC<ChartSectionProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex justify-between items-start md:items-center mb-4 gap-4">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight">
+      {/* Header Section: Stacked on mobile, row on desktop */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 md:mb-4 gap-3 md:gap-4">
+        <div className="w-full md:w-auto min-w-0">
+          <h2 className="text-lg md:text-2xl font-bold text-white tracking-tight leading-snug">
             {data.titleZh || data.titleEn}
           </h2>
         </div>
-        <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
+        
+        {/* Actions Row */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0 self-start md:self-center w-full md:w-auto">
            
-          {/* Category Label Moved Here - Right Side */}
+          {/* Category Label */}
           <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md tracking-wider border ${getCategoryStyle(data.category || 'Custom')}`}>
              {getCategoryLabel(data.category || 'Custom')}
           </span>
 
-          {/* Separator */}
-          <div className="h-4 w-px bg-slate-700 mx-1"></div>
+          {/* Separator - Hidden on tiny screens if needed, but useful */}
+          <div className="h-4 w-px bg-slate-700 mx-1 hidden sm:block"></div>
 
           {/* Unified Status Badge */}
           {renderStatusBadge()}
@@ -270,43 +273,43 @@ const ChartSection: React.FC<ChartSectionProps> = ({
         </ResponsiveContainer>
       </div>
 
-      {/* Footer: Legend and Unit Info */}
-      <div className="flex items-center justify-center gap-4 mt-4 pt-2 border-t border-slate-700/30">
+      {/* Footer: Legend and Unit Info - Optimized for Mobile */}
+      <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 mt-2 md:mt-4 pt-2 border-t border-slate-700/30">
         {/* Legend */}
-        <div className="flex items-center gap-5 text-xs font-medium">
-            <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#6366f1]"></span>
+        <div className="flex items-center gap-4 text-xs font-medium">
+            <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-[#6366f1]"></span>
                 <span className="text-slate-300">{t.usa}</span>
             </div>
-            <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444]"></span>
+            <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-[#ef4444]"></span>
                 <span className="text-slate-300">{t.china}</span>
             </div>
-            <div className="flex items-center gap-2">
-                <span className="w-4 h-0 border-t-2 border-dashed border-[#10b981]"></span>
+            <div className="flex items-center gap-1.5">
+                <span className="w-3 h-0 md:w-4 border-t-2 border-dashed border-[#10b981]"></span>
                 <span className="text-slate-300">{t.ratio}</span>
             </div>
         </div>
 
-        {/* Separator */}
-        <div className="w-px h-3 bg-slate-600"></div>
+        {/* Separator - Hidden on Mobile */}
+        <div className="hidden md:block w-px h-3 bg-slate-600"></div>
 
-        {/* Unit Info */}
-        <div className="text-xs text-slate-400">
-            {t.unit}: <span className="text-slate-300">{displayYAxisLabel}</span>
+        {/* Unit Info - Smaller on Mobile */}
+        <div className="text-[10px] md:text-xs text-slate-500 md:text-slate-400 text-center">
+            {t.unit}: <span className="text-slate-400 md:text-slate-300">{displayYAxisLabel}</span>
         </div>
       </div>
 
       {/* Navigation Footer */}
       {(prevItem || nextItem) && (
-        <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-700/50">
+        <div className="flex justify-between items-center mt-3 md:mt-6 pt-3 md:pt-4 border-t border-slate-700/50">
            {prevItem ? (
                <button 
                 onClick={() => onNavigate && onNavigate(prevItem.key)}
-                className="flex items-center gap-3 text-left group max-w-[45%]"
+                className="flex items-center gap-2 md:gap-3 text-left group max-w-[45%]"
                >
-                   <div className="p-2 rounded-full bg-slate-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0 border border-slate-700 group-hover:border-indigo-500">
-                       <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                   <div className="p-1.5 md:p-2 rounded-full bg-slate-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0 border border-slate-700 group-hover:border-indigo-500">
+                       <ArrowLeft className="w-3 h-3 md:w-4 md:h-4 group-hover:-translate-x-0.5 transition-transform" />
                    </div>
                    <div className="hidden md:block overflow-hidden">
                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">{t.prev}</span>
@@ -318,14 +321,14 @@ const ChartSection: React.FC<ChartSectionProps> = ({
            {nextItem ? (
                <button 
                 onClick={() => onNavigate && onNavigate(nextItem.key)}
-                className="flex items-center gap-3 text-right justify-end group max-w-[45%]"
+                className="flex items-center gap-2 md:gap-3 text-right justify-end group max-w-[45%]"
                >
                    <div className="hidden md:block overflow-hidden">
                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">{t.next}</span>
                        <span className="text-sm text-slate-300 group-hover:text-indigo-300 font-medium truncate block">{cleanTitle(nextItem)}</span>
                    </div>
-                   <div className="p-2 rounded-full bg-slate-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0 border border-slate-700 group-hover:border-indigo-500">
-                       <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                   <div className="p-1.5 md:p-2 rounded-full bg-slate-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0 border border-slate-700 group-hover:border-indigo-500">
+                       <ArrowRight className="w-3 h-3 md:w-4 md:h-4 group-hover:translate-x-0.5 transition-transform" />
                    </div>
                </button>
            ) : <div />}
