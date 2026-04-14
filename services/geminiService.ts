@@ -5,6 +5,7 @@ import type { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand
 const client = new OpenAI({
     apiKey: process.env.VITE_MIMO_API_KEY,
     baseURL: "https://api.xiaomimimo.com/v1",
+    dangerouslyAllowBrowser: true,
 });
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
