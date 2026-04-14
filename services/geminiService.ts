@@ -1,51 +1,52 @@
-
-import { GoogleGenAI, Type } from "@google/genai";
+import OpenAI from "openai";
 import { ComparisonResponse, Language, SavedComparison } from "../types";
-// Use Type-Only import to avoid runtime dependency at top-level
 import type { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const client = new OpenAI({
+    apiKey: process.env.MIMO_API_KEY,
+    baseURL: "https://api.xiaomimimo.com/v1",
+});
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
 const PUBLIC_URL_BASE = `https://${process.env.R2_PUBLIC_URL}`;
-const DATA_FOLDER = "sino-pulse/v1"; 
+const DATA_FOLDER = "sino-pulse/v1";
 const LIBRARY_INDEX_KEY = "sino-pulse/v1/library_index.json";
 
 const getS3Client = async () => {
     const { S3Client } = await import("@aws-sdk/client-s3");
     return new S3Client({
-      region: "auto",
-      endpoint: process.env.R2_ENDPOINT,
-      credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
-      },
+        region: "auto",
+        endpoint: process.env.R2_ENDPOINT,
+        credentials: {
+            accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+            secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+        },
     });
 };
 
 const uploadToR2 = async (key: string, data: any) => {
-  try {
-    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
-    const client = await getS3Client();
-    const command = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: key,
-        Body: JSON.stringify(data),
-        ContentType: "application/json",
-        CacheControl: "public, max-age=86400" 
-    });
-    await client.send(command);
-  } catch (error) {
-    console.warn("[R2] Upload Failed.", error);
-    throw error;
-  }
+    try {
+        const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+        const s3Client = await getS3Client();
+        const command = new PutObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key,
+            Body: JSON.stringify(data),
+            ContentType: "application/json",
+            CacheControl: "public, max-age=86400"
+        });
+        await s3Client.send(command);
+    } catch (error) {
+        console.warn("[R2] Upload Failed.", error);
+        throw error;
+    }
 };
 
 interface LibraryIndexItem {
     key: string;
     titleZh: string;
     titleEn: string;
-    summary?: string; // Added summary to index
+    summary?: string;
     category: string;
     lastModified: string;
 }
@@ -67,24 +68,22 @@ const fetchLibraryIndex = async (): Promise<LibraryIndex> => {
 const updateLibraryIndex = async (newItem: LibraryIndexItem) => {
     try {
         const { PutObjectCommand, GetObjectCommand } = await import("@aws-sdk/client-s3");
-        const client = await getS3Client();
+        const s3Client = await getS3Client();
         let index: LibraryIndex = { items: [] };
         try {
             const getCmd = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: LIBRARY_INDEX_KEY });
-            const res = await client.send(getCmd);
+            const res = await s3Client.send(getCmd);
             if (res.Body) {
                 const str = await res.Body.transformToString();
                 index = JSON.parse(str);
             }
         } catch (e: any) {
-             if (e.name !== 'NoSuchKey') console.warn("Index fetch failed", e);
+            if (e.name !== 'NoSuchKey') console.warn("Index fetch failed", e);
         }
-        
-        // Remove existing entry for this key (update logic)
+
         index.items = index.items.filter(i => i.key !== newItem.key);
-        // Add updated item
         index.items.push(newItem);
-        
+
         const putCmd = new PutObjectCommand({
             Bucket: BUCKET_NAME,
             Key: LIBRARY_INDEX_KEY,
@@ -92,7 +91,7 @@ const updateLibraryIndex = async (newItem: LibraryIndexItem) => {
             ContentType: "application/json",
             CacheControl: "no-cache"
         });
-        await client.send(putCmd);
+        await s3Client.send(putCmd);
     } catch (e) {
         console.error("[R2] Index update failed", e);
     }
@@ -101,28 +100,24 @@ const updateLibraryIndex = async (newItem: LibraryIndexItem) => {
 export const deleteComparison = async (key: string) => {
     try {
         const { DeleteObjectCommand, PutObjectCommand, GetObjectCommand } = await import("@aws-sdk/client-s3");
-        const client = await getS3Client();
+        const s3Client = await getS3Client();
 
-        // 1. Delete the actual JSON file
-        // We wrap this in a try-catch to allow "Soft Delete" if R2 CORS blocks DELETE requests.
         try {
             const delCmd = new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key });
-            await client.send(delCmd);
+            await s3Client.send(delCmd);
         } catch (e) {
             console.warn("Physical deletion failed (likely CORS), proceeding to update index.", e);
         }
 
-        // 2. Remove from index
         let index: LibraryIndex = { items: [] };
         try {
             const getCmd = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: LIBRARY_INDEX_KEY });
-            const res = await client.send(getCmd);
+            const res = await s3Client.send(getCmd);
             if (res.Body) {
                 const str = await res.Body.transformToString();
                 index = JSON.parse(str);
             }
         } catch (e: any) {
-            // If index missing, nothing to update
             return;
         }
 
@@ -136,7 +131,7 @@ export const deleteComparison = async (key: string) => {
                 ContentType: "application/json",
                 CacheControl: "no-cache"
             });
-            await client.send(putCmd);
+            await s3Client.send(putCmd);
         }
     } catch (e) {
         console.error("Delete failed", e);
@@ -166,9 +161,9 @@ export const fetchSavedComparisonByKey = async (key: string): Promise<Comparison
     } catch (e) {
         try {
             const { GetObjectCommand } = await import("@aws-sdk/client-s3");
-            const client = await getS3Client();
+            const s3Client = await getS3Client();
             const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
-            const response = await client.send(command);
+            const response = await s3Client.send(command);
             if (!response.Body) throw new Error("Empty body");
             const str = await response.Body.transformToString();
             const data = JSON.parse(str);
@@ -181,18 +176,15 @@ export const fetchSavedComparisonByKey = async (key: string): Promise<Comparison
 
 export const saveEditedComparison = async (key: string, data: ComparisonResponse) => {
     try {
-        // Ensure source is marked as r2 since it is now saved
         const payload = { ...data, source: 'r2' };
-        
-        // 1. Upload to R2
+
         await uploadToR2(key, payload);
 
-        // 2. Update Index
         await updateLibraryIndex({
             key,
             titleEn: data.titleEn || data.title,
             titleZh: data.titleZh || data.title,
-            summary: data.summary, // Pass summary
+            summary: data.summary,
             category: data.category || 'Custom',
             lastModified: new Date().toISOString()
         });
@@ -202,7 +194,6 @@ export const saveEditedComparison = async (key: string, data: ComparisonResponse
     }
 };
 
-// Retry helper for rate limit (429) errors with exponential backoff
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY_MS = 1000;
 
@@ -213,110 +204,84 @@ async function withRetry<T>(fn: () => Promise<T>, context: string): Promise<T> {
             return await fn();
         } catch (error: any) {
             lastError = error;
-            // Check if it's a rate limit error (429)
-            const isRateLimit = error?.status === 429 || error?.code === 429 || 
+            const isRateLimit = error?.status === 429 || error?.code === 429 ||
                 error?.message?.includes('429') || error?.message?.includes('rate limit');
-            
+
             if (isRateLimit && attempt < MAX_RETRIES - 1) {
                 const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
                 console.warn(`[${context}] Rate limited (429), retrying in ${delay}ms... (attempt ${attempt + 1}/${MAX_RETRIES})`);
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;
             }
-            // Not a rate limit error or out of retries, throw
             throw error;
         }
     }
     throw lastError;
 }
 
-const responseSchema = {
-    type: Type.OBJECT,
-    properties: {
-        title: { type: Type.STRING, description: "Short title of the comparison." },
-        titleEn: { type: Type.STRING, description: "Clean English title, no meta-commentary." },
-        titleZh: { type: Type.STRING, description: "Clean Chinese title, no meta-commentary." },
-        category: { type: Type.STRING },
-        yAxisLabel: { type: Type.STRING, description: "Concise unit label (e.g. 'Billions USD'). No notes." },
-        summary: { type: Type.STRING, description: "A concise 1-2 sentence summary of the trend." },
-        detailedAnalysis: { type: Type.STRING },
-        futureOutlook: { type: Type.STRING },
-        data: {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    year: { type: Type.STRING },
-                    usa: { type: Type.NUMBER },
-                    china: { type: Type.NUMBER }
-                },
-                required: ["year", "usa", "china"]
-            }
-        },
-        sources: {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    title: { type: Type.STRING },
-                    url: { type: Type.STRING }
-                }
-            }
-        }
-    },
-    required: ["title", "titleEn", "titleZh", "data", "summary", "detailedAnalysis", "futureOutlook", "yAxisLabel"]
-};
+const systemPrompt = `You are a data analysis assistant. Generate a JSON response with the following schema:
+{
+    "title": "Short title of the comparison",
+    "titleEn": "Clean English title, no meta-commentary",
+    "titleZh": "Clean Chinese title, no meta-commentary",
+    "category": "Category name",
+    "yAxisLabel": "Concise unit label (e.g. 'Billions USD')",
+    "summary": "A concise 1-2 sentence summary (max 100 words)",
+    "detailedAnalysis": "Detailed analysis text",
+    "futureOutlook": "Future outlook text",
+    "data": [{"year": "YYYY", "usa": number, "china": number}],
+    "sources": [{"title": "Source title", "url": "Source URL"}]
+}
+STRICT RULES:
+1. Titles MUST be concise and factual (e.g. "USA vs China GDP per Capita")
+2. DO NOT include any instructions, meta-commentary, or technical notes
+3. Data values MUST be numbers, not strings
+4. yAxisLabel MUST be very short and clean (e.g. "Billions USD", "Percentage", "Tons"). DO NOT include notes or text in brackets []
+5. Summary MUST be a concise overview (max 100 words)
+6. Output ONLY the JSON, no markdown code blocks or any other text`;
 
 export const fetchComparisonData = async (
-    query: string, 
-    language: Language, 
+    query: string,
+    language: Language,
     forceRefresh: boolean = false,
     canCreate: boolean = false
 ): Promise<{ data: ComparisonResponse; uploadPromise?: Promise<void> }> => {
     if (!forceRefresh) {
         try {
             const index = await fetchLibraryIndex();
-            const match = index.items.find(item => 
-                item.titleEn.toLowerCase() === query.toLowerCase() || 
+            const match = index.items.find(item =>
+                item.titleEn.toLowerCase() === query.toLowerCase() ||
                 item.titleZh === query
             );
             if (match) {
                 const cachedData = await fetchSavedComparisonByKey(match.key);
                 return { data: cachedData };
             }
-        } catch (e) {}
+        } catch (e) { }
     }
 
-    // Restriction check: If not cached and not allowed to create, throw error
     if (!canCreate) {
         throw { code: 'PERMISSION_DENIED', message: 'Only administrators can generate new comparisons.' };
     }
 
     const langName = language === 'zh' ? 'Chinese (Simplified)' : 'English';
-    const prompt = `
-        Compare the United States (USA) and China for: "${query}".
-        Provide historical yearly data (starting from 1945 where possible up to 2024), analysis, and outlook.
-        STRICT RULES:
-        1. Titles MUST be concise and factual (e.g. "USA vs China GDP per Capita"). 
-        2. DO NOT include any instructions, meta-commentary, or technical notes in the title fields.
-        3. Response language: ${langName}.
-        4. Data values MUST be numbers, not strings.
-        5. yAxisLabel MUST be very short and clean (e.g. "Billions USD", "Percentage", "Tons"). DO NOT include notes, projections disclaimer, or text in brackets [].
-        6. Summary MUST be a concise overview (max 100 words).
-    `;
+    const userPrompt = `Compare the United States (USA) and China for: "${query}".
+Provide historical yearly data (starting from 1945 where possible up to 2024), analysis, and outlook.
+Response language: ${langName}.`;
 
-    const response = await withRetry(async () => {
-        return await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                responseSchema: responseSchema
-            }
+    const completion = await withRetry(async () => {
+        return await client.chat.completions.create({
+            model: "mimo-v2-pro",
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.3,
         });
     }, 'fetchComparisonData');
 
-    const text = response.text;
+    const text = completion.choices[0]?.message?.content;
     if (!text) throw new Error("Empty response");
 
     const data: ComparisonResponse = JSON.parse(text);
@@ -331,7 +296,7 @@ export const fetchComparisonData = async (
                 key,
                 titleEn: data.titleEn || data.title,
                 titleZh: data.titleZh || data.title,
-                summary: data.summary, // Pass summary
+                summary: data.summary,
                 category: data.category || 'Custom',
                 lastModified: new Date().toISOString()
             });
