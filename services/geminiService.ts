@@ -4,7 +4,7 @@ import { ComparisonResponse, Language, SavedComparison } from "../types";
 // Use Type-Only import to avoid runtime dependency at top-level
 import type { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
 const PUBLIC_URL_BASE = `https://${process.env.R2_PUBLIC_URL}`;
@@ -202,6 +202,34 @@ export const saveEditedComparison = async (key: string, data: ComparisonResponse
     }
 };
 
+// Retry helper for rate limit (429) errors with exponential backoff
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000;
+
+async function withRetry<T>(fn: () => Promise<T>, context: string): Promise<T> {
+    let lastError: any;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+            return await fn();
+        } catch (error: any) {
+            lastError = error;
+            // Check if it's a rate limit error (429)
+            const isRateLimit = error?.status === 429 || error?.code === 429 || 
+                error?.message?.includes('429') || error?.message?.includes('rate limit');
+            
+            if (isRateLimit && attempt < MAX_RETRIES - 1) {
+                const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+                console.warn(`[${context}] Rate limited (429), retrying in ${delay}ms... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+            // Not a rate limit error or out of retries, throw
+            throw error;
+        }
+    }
+    throw lastError;
+}
+
 const responseSchema = {
     type: Type.OBJECT,
     properties: {
@@ -277,14 +305,16 @@ export const fetchComparisonData = async (
         6. Summary MUST be a concise overview (max 100 words).
     `;
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: prompt,
-        config: {
-            responseMimeType: 'application/json',
-            responseSchema: responseSchema
-        }
-    });
+    const response = await withRetry(async () => {
+        return await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: responseSchema
+            }
+        });
+    }, 'fetchComparisonData');
 
     const text = response.text;
     if (!text) throw new Error("Empty response");
