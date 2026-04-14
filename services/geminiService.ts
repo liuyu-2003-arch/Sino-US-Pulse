@@ -3,7 +3,7 @@ import { ComparisonResponse, Language, SavedComparison } from "../types";
 import type { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const client = new OpenAI({
-    apiKey: process.env.MIMO_API_KEY,
+    apiKey: process.env.VITE_MIMO_API_KEY,
     baseURL: "https://api.xiaomimimo.com/v1",
 });
 
