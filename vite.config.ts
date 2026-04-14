@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY),
+      'process.env.VITE_MIMO_API_KEY': JSON.stringify(env.VITE_MIMO_API_KEY || process.env.VITE_MIMO_API_KEY || ''),
       // R2 Configuration - Now correctly pulling from environment variables
       'process.env.R2_BUCKET_NAME': JSON.stringify(env.R2_BUCKET_NAME || ''),
       'process.env.R2_PUBLIC_URL': JSON.stringify(env.R2_PUBLIC_URL || ''),
